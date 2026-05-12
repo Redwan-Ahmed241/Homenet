@@ -369,6 +369,7 @@ input, select {
 
 /* CTA */
 .search__cta {
+  display: block;
   width: 100%;
   padding: var(--space-3) var(--space-6);
   background: var(--color-primary);

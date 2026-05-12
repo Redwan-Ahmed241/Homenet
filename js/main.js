@@ -4,14 +4,8 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   // --- Tab switching ---
-  const tabs = document.querySelectorAll('.header__nav-tab');
-  tabs.forEach(tab => {
-    tab.addEventListener('click', (e) => {
-      e.preventDefault();
-      tabs.forEach(t => t.classList.remove('header__nav-tab--active'));
-      tab.classList.add('header__nav-tab--active');
-    });
-  });
+  // Tab active state is handled by page-specific links (no preventDefault)
+  // Active state is set via HTML class on each page
 
   // --- Filter toggle ---
   const filtersToggle = document.getElementById('filters-toggle');
@@ -68,15 +62,15 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // --- Header scroll shadow ---
-  const header = document.getElementById('header');
-  let lastScroll = 0;
-  window.addEventListener('scroll', () => {
-    const currentScroll = window.pageYOffset;
-    if (currentScroll > 10) {
-      header.style.boxShadow = '0 2px 12px rgba(0,0,0,0.15)';
-    } else {
-      header.style.boxShadow = 'none';
-    }
-    lastScroll = currentScroll;
-  }, { passive: true });
+  const header = document.querySelector('.header');
+  if (header) {
+    window.addEventListener('scroll', () => {
+      const currentScroll = window.pageYOffset;
+      if (currentScroll > 10) {
+        header.style.boxShadow = '0 2px 12px rgba(0,0,0,0.15)';
+      } else {
+        header.style.boxShadow = 'none';
+      }
+    }, { passive: true });
+  }
 });
