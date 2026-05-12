@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Protect your property with Homenet insurance plans">
+  <title>Property Insurance | Homenet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .insurance { padding: 20px 16px; }
+    .insurance__hero { text-align: center; margin-bottom: 32px; }
+    .insurance__hero-title { font-size: 28px; font-weight: 700; color: #1a1a1a; margin-bottom: 8px; }
+    .insurance__hero-subtitle { font-size: 16px; color: #525252; }
+    .plans { display: flex; flex-direction: column; gap: 16px; margin-bottom: 32px; }
+    .plan-card { background: #fff; border: 1.5px solid #e0e0e0; border-radius: 12px; padding: 24px; position: relative; }
+    .plan-card--premium { border-color: #0a8a2a; }
+    .plan-card__badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: #0a8a2a; color: #fff; font-size: 11px; font-weight: 600; padding: 4px 12px; border-radius: 9999px; white-space: nowrap; }
+    .plan-card__header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+    .plan-card__name { font-size: 18px; font-weight: 700; color: #1a1a1a; }
+    .plan-card__price { font-size: 28px; font-weight: 700; color: #1a1a1a; }
+    .plan-card__period { font-size: 14px; color: #737373; }
+    .plan-card__features { margin: 20px 0; }
+    .plan-feature { display: flex; align-items: center; gap: 10px; padding: 8px 0; font-size: 14px; color: #1a1a1a; }
+    .plan-feature__icon { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
+    .plan-feature__icon--yes { background: #e8f5e9; color: #0a8a2a; }
+    .plan-feature__icon--no { background: #f5f5f5; color: #a3a3a3; }
+    .plan-card__cta { width: 100%; padding: 14px; border-radius: 9999px; font-size: 14px; font-weight: 600; text-align: center; cursor: pointer; transition: all 150ms ease; border: 1.5px solid #e0e0e0; background: #fff; color: #1a1a1a; }
+    .plan-card__cta:hover { border-color: #0a8a2a; color: #0a8a2a; }
+    .plan-card--premium .plan-card__cta { background: #0a8a2a; border-color: #0a8a2a; color: #fff; }
+    .plan-card--premium .plan-card__cta:hover { background: #077a22; }
+    .why-insure { margin-bottom: 32px; }
+    .why-insure__title { font-size: 20px; font-weight: 700; color: #1a1a1a; margin-bottom: 16px; text-align: center; }
+    .why-insure__grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    .why-card { background: #f5f5f5; border-radius: 12px; padding: 20px; text-align: center; }
+    .why-card__icon { width: 48px; height: 48px; background: #e8f5e9; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; }
+    .why-card__icon svg { width: 24px; height: 24px; color: #0a8a2a; }
+    .why-card__title { font-size: 16px; font-weight: 600; color: #1a1a1a; margin-bottom: 4px; }
+    .why-card__desc { font-size: 13px; color: #525252; line-height: 1.5; }
+    .faq { margin-bottom: 32px; }
+    .faq__title { font-size: 20px; font-weight: 700; color: #1a1a1a; margin-bottom: 16px; }
+    .faq__item { border-bottom: 1px solid #e0e0e0; }
+    .faq__question { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; font-size: 16px; font-weight: 600; color: #1a1a1a; cursor: pointer; width: 100%; text-align: left; background: none; border: none; }
+    .faq__question svg { width: 20px; height: 20px; color: #525252; transition: transform 150ms ease; }
+    .faq__question[aria-expanded="true"] svg { transform: rotate(180deg); }
+    .faq__answer { padding-bottom: 16px; font-size: 14px; color: #525252; line-height: 1.6; display: none; }
+    .faq__answer--visible { display: block; }
+    .trust-section { background: #e8f5e9; border-radius: 12px; padding: 24px; text-align: center; margin-bottom: 32px; }
+    .trust-section__title { font-size: 16px; font-weight: 700; color: #0a8a2a; margin-bottom: 8px; }
+    .trust-section__text { font-size: 14px; color: #525252; }
+    @media (min-width: 600px) {
+      .insurance { padding: 40px 32px; max-width: 800px; margin: 0 auto; }
+      .plans { flex-direction: row; gap: 20px; }
+      .plan-card { flex: 1; }
+      .why-insure__grid { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ========== HEADER ========== -->
+  <header class="header">
+    <div class="header__top">
+      <a href="index.html" class="header__logo">
+        <span class="header__logo-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 3L4 9v12h16V9l-8-6zm0 2.5L18 10v9H6v-9l6-4.5z"/></svg>
+        </span>
+        Homenet
+      </a>
+      <div class="header__actions">
+        <button class="header__action-btn" aria-label="User account">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 4-6 8-6s8 2 8 6"/></svg>
+        </button>
+        <button class="header__action-btn" aria-label="Menu">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+      </div>
+    </div>
+    <nav class="header__nav">
+      <a href="listings.html" class="header__nav-tab">For Sale</a>
+      <a href="#" class="header__nav-tab">Find Prices</a>
+      <a href="#" class="header__nav-tab">Search for a Broker</a>
+    </nav>
+  </header>
+
+  <!-- ========== INSURANCE ========== -->
+  <main class="insurance">
+    <div class="insurance__hero">
+      <h1 class="insurance__hero-title">Protect Your Property</h1>
+      <p class="insurance__hero-subtitle">Secure your land or apartment with comprehensive insurance coverage</p>
+    </div>
+
+    <div class="plans">
+      <div class="plan-card">
+        <div class="plan-card__header">
+          <div>
+            <div class="plan-card__name">Basic</div>
+          </div>
+          <div>
+            <div class="plan-card__price">৳2,500</div>
+            <div class="plan-card__period">/year</div>
+          </div>
+        </div>
+        <div class="plan-card__features">
+          <div class="plan-feature">
+            <span class="plan-feature__icon plan-feature__icon--yes">✓</span>
+            Fire damage coverage
+          </div>
+          <div class="plan-feature">
+            <span class="plan-feature__icon plan-feature__icon--yes">✓</span>
+            Natural disaster protection
+          </div>
+          <div class="plan-feature">
+            <span class="plan-feature__icon plan-feature__icon--yes">✓</span>
+            Theft coverage (up to ৳5 lakh)
+          </div>
+          <div class="plan-feature">
+            <span class="plan-feature__icon plan-feature__icon--no">—</span>
+            Legal liability coverage
+          </div>
+          <div class="plan-feature">
+            <span class="plan-feature__icon plan-feature__icon--no">—</span>
+            24/7 emergency support
+          </div>
+          <div class="plan-feature">
+            <span class="plan-feature__icon plan-feature__icon--no">—</span>
+            Cashless claims process
+          </div>
+        </div>
+        <button class="plan-card__cta">Get Basic Plan</button>
+      </div>
+
+      <div class="plan-card plan-card--premium">
+        <span class="plan-card__badge">Recommended</span>
+        <div class="plan-card__header">
+          <div>
+            <div class="plan-card__name">Premium</div>
+          </div>
+          <div>
+            <div class="plan-card__price">৳5,000</div>
+            <div class="plan-card__period">/year</div>
+          </div>
+        </div>
+        <div class="plan-card__features">
+          <div class="plan-feature">
+            <span class="plan-feature__icon plan-feature__icon--yes">✓</span>
+            Fire damage coverage
+          </div>
+          <div class="plan-feature">
+            <span class="plan-feature__icon plan-feature__icon--yes">✓</span>
+            Natural disaster protection
+          </div>
+          <div class="plan-feature">
+            <span class="plan-feature__icon plan-feature__icon--yes">✓</span>
+            Theft coverage (up to ৳15 lakh)
+          </div>
+          <div class="plan-feature">
+            <span class="plan-feature__icon plan-feature__icon--yes">✓</span>
+            Legal liability coverage
+          </div>
+          <div class="plan-feature">
+            <span class="plan-feature__icon plan-feature__icon--yes">✓</span>
+            24/7 emergency support
+          </div>
+          <div class="plan-feature">
+            <span class="plan-feature__icon plan-feature__icon--yes">✓</span>
+            Cashless claims process
+          </div>
+        </div>
+        <button class="plan-card__cta">Get Premium Plan</button>
+      </div>
+    </div>
+
+    <div class="why-insure">
+      <h2 class="why-insure__title">Why Insure Your Property?</h2>
+      <div class="why-insure__grid">
+        <div class="why-card">
+          <div class="why-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+          </div>
+          <div class="why-card__title">Financial Security</div>
+          <div class="why-card__desc">Protect your biggest investment from unexpected damages and losses</div>
+        </div>
+        <div class="why-card">
+          <div class="why-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          </div>
+          <div class="why-card__title">Legal Compliance</div>
+          <div class="why-card__desc">Many banks require property insurance for mortgage approvals</div>
+        </div>
+        <div class="why-card">
+          <div class="why-card__icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+          </div>
+          <div class="why-card__title">Peace of Mind</div>
+          <div class="why-card__desc">Sleep easy knowing your property is protected against common risks</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="faq">
+      <h2 class="faq__title">Frequently Asked Questions</h2>
+      
+      <div class="faq__item">
+        <button class="faq__question" aria-expanded="false">
+          What does property insurance cover?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="faq__answer">Property insurance typically covers fire damage, natural disasters, theft, and in premium plans, legal liability and emergency support. Coverage varies based on the plan you choose.</div>
+      </div>
+
+      <div class="faq__item">
+        <button class="faq__question" aria-expanded="false">
+          How do I file a claim?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="faq__answer">You can file a claim through our 24/7 hotline or online portal. Premium plan holders enjoy cashless claims at network hospitals and service centers.</div>
+      </div>
+
+      <div class="faq__item">
+        <button class="faq__question" aria-expanded="false">
+          Is insurance required for property purchase?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="faq__answer">While not legally required, most banks require property insurance as a condition for mortgage approval. It's also highly recommended for protection.</div>
+      </div>
+
+      <div class="faq__item">
+        <button class="faq__question" aria-expanded="false">
+          Can I transfer my insurance to a new property?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="faq__answer">Yes, you can transfer your policy to a new property within Bangladesh. A small transfer fee may apply and the new property must meet our underwriting criteria.</div>
+      </div>
+
+      <div class="faq__item">
+        <button class="faq__question" aria-expanded="false">
+          What is the claim process timeline?
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </button>
+        <div class="faq__answer">Simple claims are processed within 7-10 business days. Premium plan holders with cashless facilities can get immediate assistance at network service centers.</div>
+      </div>
+    </div>
+
+    <div class="trust-section">
+      <div class="trust-section__title">Verified by Trusted Partners</div>
+      <div class="trust-section__text">Our insurance products are backed by leading insurance providers in Bangladesh</div>
+    </div>
+  </main>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="footer">
+    <div class="footer__sections-grid">
+      <div class="footer__section">
+        <h4 class="footer__title">Contact</h4>
+        <a href="#" class="footer__link">Customer service & contact</a>
+        <a href="#" class="footer__link">About Homenet</a>
+      </div>
+      <div class="footer__section">
+        <h4 class="footer__title">Apps</h4>
+        <a href="#" class="footer__app-link">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83z"/></svg>
+          iPhone and iPad
+        </a>
+        <a href="#" class="footer__app-link">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.18 23.77L14.25 12.7 3.18.23c-.2.15-.18.42-.18.77v22c0 .35-.02.62.18.77zm1.74 1.08L16.67 14l-2.42-2.42L4.92 24.85zm12.6-11.7l3.24-1.87c.5-.29.5-.76 0-1.05l-3.24-1.87-2.73 2.4 2.73 2.39zM4.92-.85L14.25 12.4 16.67 10 4.92-.85z"/></svg>
+          Android
+        </a>
+      </div>
+      <div class="footer__section">
+        <h4 class="footer__title">Follow Homenet</h4>
+        <a href="#" class="footer__social-link">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22 12c0-5.52-4.48-10-10-10S2 6.48 2 12c0 4.84 3.44 8.87 8 9.8V15H8v-3h2V9.5C10 7.57 11.57 6 13.5 6H16v3h-2c-.55 0-1 .45-1 1v2h3v3h-3v6.95c5.05-.5 9-4.76 9-9.95z"/></svg>
+          Facebook
+        </a>
+        <a href="#" class="footer__social-link">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h14m-.5 15.5v-5.3a3.26 3.26 0 00-3.26-3.26c-.85 0-1.84.52-2.32 1.3v-1.11h-2.79v8.37h2.79v-4.93c0-.77.62-1.4 1.39-1.4a1.4 1.4 0 011.4 1.4v4.93h2.79M6.88 8.56a1.68 1.68 0 001.68-1.68c0-.93-.75-1.69-1.68-1.69a1.69 1.69 0 00-1.69 1.69c0 .93.76 1.68 1.69 1.68m1.39 9.94v-8.37H5.5v8.37h2.77z"/></svg>
+          LinkedIn
+        </a>
+      </div>
+    </div>
+    <div class="footer__bottom">
+      <div class="footer__bottom-links">
+        <a href="#" class="footer__bottom-link">All homes integrity</a>
+        <span class="footer__bottom-link">·</span>
+        <a href="#" class="footer__bottom-link">Cookies</a>
+        <span class="footer__bottom-link">·</span>
+        <a href="#" class="footer__bottom-link">Terms & Legal</a>
+      </div>
+      <p class="footer__copyright">Responsible publisher: Homenet Bangladesh · © 2025 Homenet BD</p>
+    </div>
+  </footer>
+
+  <script>
+    // FAQ Accordion
+    document.querySelectorAll('.faq__question').forEach(button => {
+      button.addEventListener('click', () => {
+        const expanded = button.getAttribute('aria-expanded') === 'true';
+        button.setAttribute('aria-expanded', !expanded);
+        button.nextElementSibling.classList.toggle('faq__answer--visible');
+      });
+    });
+  </script>
+</body>
+</html>
