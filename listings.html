@@ -16,12 +16,37 @@
     .listings__search-input { flex: 1; padding: 12px 16px; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 14px; }
     .listings__search-input:focus { border-color: #0a8a2a; box-shadow: 0 0 0 3px rgba(10,138,42,0.1); }
     .listings__search-btn { padding: 12px 20px; background: #0a8a2a; color: #fff; border-radius: 8px; font-weight: 600; border: none; cursor: pointer; }
-    .listings__filters { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; padding-bottom: 12px; margin-bottom: 16px; }
+    .listings__filters { display: flex; gap: 8px; overflow: visible; padding-bottom: 12px; margin-bottom: 16px; flex-wrap: wrap; position: relative; z-index: 40; }
     .listings__filters::-webkit-scrollbar { display: none; }
     .filter-pill { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border: 1.5px solid #e0e0e0; border-radius: 9999px; font-size: 13px; font-weight: 500; white-space: nowrap; background: #fff; cursor: pointer; transition: all 150ms ease; scroll-snap-align: start; }
     .filter-pill:hover { border-color: #0a8a2a; }
     .filter-pill--active { background: #0a8a2a; color: #fff; border-color: #0a8a2a; }
-    .filter-pill svg { width: 14px; height: 14px; }
+    .filter-pill svg { width: 14px; height: 14px; transition: transform 150ms; }
+    .filter-pill--open svg { transform: rotate(180deg); }
+    .filter-pill--open { background: #0a8a2a; color: #fff; border-color: #0a8a2a; }
+    .filter-pill--reset { background: #fff; color: #d32f2f; border-color: #d32f2f; font-size: 12px; }
+    .filter-pill--reset:hover { background: #ffebee; }
+    .filter-wrap { position: relative; }
+    .filter-dropdown { display: none; position: absolute; top: calc(100% + 8px); left: 0; min-width: 220px; background: #fff; border: 1.5px solid #e0e0e0; border-radius: 12px; padding: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); z-index: 50; }
+    .filter-dropdown--open { display: block; }
+    .filter-dropdown__label { display: block; font-size: 12px; font-weight: 600; color: #525252; margin-bottom: 6px; margin-top: 8px; }
+    .filter-dropdown__label:first-child { margin-top: 0; }
+    .filter-dropdown__input { width: 100%; padding: 10px 12px; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 14px; margin-bottom: 4px; box-sizing: border-box; }
+    .filter-dropdown__input:focus { border-color: #0a8a2a; outline: none; box-shadow: 0 0 0 3px rgba(10,138,42,0.1); }
+    .filter-dropdown__presets { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+    .preset-btn { padding: 6px 10px; border: 1px solid #e0e0e0; border-radius: 6px; font-size: 12px; background: #f5f5f5; cursor: pointer; transition: all 150ms; }
+    .preset-btn:hover, .preset-btn--active { background: #e8f5e9; border-color: #0a8a2a; color: #0a8a2a; }
+    .filter-dropdown__apply { width: 100%; padding: 10px; background: #0a8a2a; color: #fff; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+    .filter-check { display: flex; align-items: center; gap: 8px; padding: 8px 0; font-size: 14px; color: #1a1a1a; cursor: pointer; border-bottom: 1px solid #f0f0f0; }
+    .filter-check:last-of-type { border-bottom: none; }
+    .filter-check input[type="checkbox"] { width: 18px; height: 18px; accent-color: #0a8a2a; cursor: pointer; }
+    .sort-select { padding: 8px 12px; border: 1.5px solid #e0e0e0; border-radius: 8px; font-size: 13px; background: #fff; cursor: pointer; }
+    .sort-select:focus { border-color: #0a8a2a; outline: none; }
+    .no-results { text-align: center; padding: 48px 16px; color: #737373; font-size: 16px; }
+    .listing-card--hidden { display: none !important; }
+    .listings__active-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    .active-tag { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; background: #e8f5e9; color: #0a8a2a; border-radius: 6px; font-size: 12px; font-weight: 600; }
+    .active-tag button { background: none; border: none; color: #0a8a2a; cursor: pointer; font-size: 14px; padding: 0; line-height: 1; }
     .listings__toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
     .listings__count { font-size: 14px; color: #525252; }
     .listings__count span { font-weight: 700; color: #1a1a1a; }
@@ -78,7 +103,7 @@
     </div>
     <nav class="header__nav">
       <a href="listings.html" class="header__nav-tab header__nav-tab--active">For Sale</a>
-      <a href="listings.html" class="header__nav-tab">Find Prices</a>
+      <a href="listings.html?filter=price" class="header__nav-tab">Find Prices</a>
       <a href="dashboard.html" class="header__nav-tab">Search for a Broker</a>
     </nav>
   </header>
@@ -90,29 +115,65 @@
       <button class="listings__search-btn">Search</button>
     </div>
 
-    <div class="listings__filters">
-      <button class="filter-pill filter-pill--active" data-filter="location">Location</button>
-      <button class="filter-pill" data-filter="price">Price</button>
-      <button class="filter-pill" data-filter="size">Size</button>
-      <button class="filter-pill" data-filter="type">Property Type</button>
-      <button class="filter-pill" data-filter="more">
-        More
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
-      </button>
+    <div class="listings__filters" id="filters-bar">
+      <div class="filter-wrap">
+        <button class="filter-pill" data-filter="price">Price <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="filter-dropdown" id="dd-price">
+          <label class="filter-dropdown__label">Min Price (Lakh ৳)</label>
+          <input type="number" id="price-min" class="filter-dropdown__input" placeholder="0" value="">
+          <label class="filter-dropdown__label">Max Price (Lakh ৳)</label>
+          <input type="number" id="price-max" class="filter-dropdown__input" placeholder="Any" value="">
+          <div class="filter-dropdown__presets">
+            <button class="preset-btn" data-min="0" data-max="20">Under ৳20L</button>
+            <button class="preset-btn" data-min="20" data-max="50">৳20-50L</button>
+            <button class="preset-btn" data-min="50" data-max="100">৳50L-1Cr</button>
+            <button class="preset-btn" data-min="100" data-max="">৳1Cr+</button>
+          </div>
+          <button class="filter-dropdown__apply" onclick="applyFilters()">Apply</button>
+        </div>
+      </div>
+      <div class="filter-wrap">
+        <button class="filter-pill" data-filter="location">Location <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="filter-dropdown" id="dd-location">
+          <label class="filter-check"><input type="checkbox" value="dhaka" checked> Dhaka</label>
+          <label class="filter-check"><input type="checkbox" value="rajshahi" checked> Rajshahi</label>
+          <label class="filter-check"><input type="checkbox" value="sylhet" checked> Sylhet</label>
+          <label class="filter-check"><input type="checkbox" value="khulna" checked> Khulna</label>
+          <button class="filter-dropdown__apply" onclick="applyFilters()">Apply</button>
+        </div>
+      </div>
+      <div class="filter-wrap">
+        <button class="filter-pill" data-filter="type">Property Type <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></button>
+        <div class="filter-dropdown" id="dd-type">
+          <label class="filter-check"><input type="checkbox" value="residential" checked> Residential</label>
+          <label class="filter-check"><input type="checkbox" value="commercial" checked> Commercial</label>
+          <label class="filter-check"><input type="checkbox" value="agricultural" checked> Agricultural</label>
+          <label class="filter-check"><input type="checkbox" value="apartment" checked> Apartment</label>
+          <button class="filter-dropdown__apply" onclick="applyFilters()">Apply</button>
+        </div>
+      </div>
+      <button class="filter-pill filter-pill--reset" id="reset-filters" style="display:none">✕ Clear All</button>
     </div>
 
     <div class="listings__toolbar">
-      <div class="listings__count"><span>24</span> properties for sale</div>
-      <div class="listings__toggle">
-        <button class="toggle-btn toggle-btn--active" id="btn-list">List</button>
-        <button class="toggle-btn" id="btn-map">Map</button>
+      <div class="listings__count"><span id="count-num">5</span> properties for sale</div>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <select class="sort-select" id="sort-select">
+          <option value="newest">Newest</option>
+          <option value="price-low">Price: Low → High</option>
+          <option value="price-high">Price: High → Low</option>
+        </select>
+        <div class="listings__toggle">
+          <button class="toggle-btn toggle-btn--active" id="btn-list">List</button>
+          <button class="toggle-btn" id="btn-map">Map</button>
+        </div>
       </div>
     </div>
 
     <div class="listings__map" id="map"></div>
 
     <div class="listings__grid" id="listings-grid">
-      <a href="property.html" class="listing-card">
+      <a href="property.html" class="listing-card" data-price="45" data-location="dhaka" data-size="5" data-type="residential">
         <div class="listing-card__img-wrap">
           <img src="images/gulshan_plot.png" alt="Plot in Gulshan" class="listing-card__img" loading="lazy">
           <span class="listing-card__badge">1</span>
@@ -135,7 +196,7 @@
         </div>
       </a>
 
-      <a href="property.html" class="listing-card">
+      <a href="property.html" class="listing-card" data-price="18" data-location="rajshahi" data-size="10" data-type="agricultural">
         <div class="listing-card__img-wrap">
           <img src="images/hero_land.png" alt="Plot in Rajshahi" class="listing-card__img" loading="lazy">
           <span class="listing-card__badge">2</span>
@@ -158,7 +219,7 @@
         </div>
       </a>
 
-      <a href="property.html" class="listing-card">
+      <a href="property.html" class="listing-card" data-price="32" data-location="sylhet" data-size="8" data-type="residential">
         <div class="listing-card__img-wrap">
           <img src="images/land_sylhet.png" alt="Plot in Sylhet" class="listing-card__img" loading="lazy">
           <span class="listing-card__badge">3</span>
@@ -181,7 +242,7 @@
         </div>
       </a>
 
-      <a href="property.html" class="listing-card">
+      <a href="property.html" class="listing-card" data-price="22" data-location="khulna" data-size="12" data-type="commercial">
         <div class="listing-card__img-wrap">
           <img src="images/khulna_land.png" alt="Plot in Khulna" class="listing-card__img" loading="lazy">
           <span class="listing-card__badge">4</span>
@@ -204,7 +265,7 @@
         </div>
       </a>
 
-      <a href="property.html" class="listing-card">
+      <a href="property.html" class="listing-card" data-price="85" data-location="dhaka" data-size="1200" data-type="apartment">
         <div class="listing-card__img-wrap">
           <img src="images/apartment_dhaka.png" alt="Apartment in Dhanmondi" class="listing-card__img" loading="lazy">
           <span class="listing-card__badge">5</span>
@@ -277,61 +338,161 @@
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
   <script>
-    // Filter pills
-    document.querySelectorAll('.filter-pill').forEach(pill => {
-      pill.addEventListener('click', () => {
-        pill.classList.toggle('filter-pill--active');
+    const cards = document.querySelectorAll('.listing-card');
+    const grid = document.getElementById('listings-grid');
+    const countEl = document.getElementById('count-num');
+    const searchInput = document.querySelector('.listings__search-input');
+    const searchBtn = document.querySelector('.listings__search-btn');
+    const resetBtn = document.getElementById('reset-filters');
+
+    // --- Dropdown toggle ---
+    document.querySelectorAll('.filter-pill[data-filter]').forEach(pill => {
+      pill.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const wrap = pill.parentElement;
+        const dd = wrap.querySelector('.filter-dropdown');
+        const wasOpen = dd.classList.contains('filter-dropdown--open');
+        closeAllDropdowns();
+        if (!wasOpen) {
+          dd.classList.add('filter-dropdown--open');
+          pill.classList.add('filter-pill--open');
+        }
       });
     });
 
-    // Toggle List/Map
+    function closeAllDropdowns() {
+      document.querySelectorAll('.filter-dropdown').forEach(d => d.classList.remove('filter-dropdown--open'));
+      document.querySelectorAll('.filter-pill').forEach(p => p.classList.remove('filter-pill--open'));
+    }
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.filter-wrap')) closeAllDropdowns();
+    });
+
+    // --- Price presets ---
+    document.querySelectorAll('.preset-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.getElementById('price-min').value = btn.dataset.min;
+        document.getElementById('price-max').value = btn.dataset.max;
+        document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('preset-btn--active'));
+        btn.classList.add('preset-btn--active');
+      });
+    });
+
+    // --- Apply filters ---
+    function applyFilters() {
+      closeAllDropdowns();
+      const minP = parseFloat(document.getElementById('price-min').value) || 0;
+      const maxP = parseFloat(document.getElementById('price-max').value) || Infinity;
+      const locs = [...document.querySelectorAll('#dd-location input:checked')].map(c => c.value);
+      const types = [...document.querySelectorAll('#dd-type input:checked')].map(c => c.value);
+      const query = searchInput.value.trim().toLowerCase();
+
+      let visible = 0;
+      cards.forEach(card => {
+        const price = parseFloat(card.dataset.price);
+        const loc = card.dataset.location;
+        const type = card.dataset.type;
+        const text = card.textContent.toLowerCase();
+
+        const passPrice = price >= minP && price <= maxP;
+        const passLoc = locs.length === 0 || locs.includes(loc);
+        const passType = types.length === 0 || types.includes(type);
+        const passSearch = !query || text.includes(query);
+
+        if (passPrice && passLoc && passType && passSearch) {
+          card.classList.remove('listing-card--hidden');
+          visible++;
+        } else {
+          card.classList.add('listing-card--hidden');
+        }
+      });
+
+      countEl.textContent = visible;
+      const hasFilters = minP > 0 || maxP < Infinity || locs.length < 4 || types.length < 4 || query;
+      resetBtn.style.display = hasFilters ? 'flex' : 'none';
+
+      // Show no-results message
+      let noRes = document.getElementById('no-results');
+      if (visible === 0) {
+        if (!noRes) {
+          noRes = document.createElement('div');
+          noRes.id = 'no-results';
+          noRes.className = 'no-results';
+          noRes.innerHTML = 'No properties match your filters. Try adjusting your criteria.';
+          grid.after(noRes);
+        }
+        noRes.style.display = 'block';
+      } else if (noRes) {
+        noRes.style.display = 'none';
+      }
+    }
+
+    // --- Reset ---
+    resetBtn.addEventListener('click', () => {
+      document.getElementById('price-min').value = '';
+      document.getElementById('price-max').value = '';
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('preset-btn--active'));
+      document.querySelectorAll('#dd-location input, #dd-type input').forEach(c => c.checked = true);
+      searchInput.value = '';
+      applyFilters();
+    });
+
+    // --- Search ---
+    searchBtn.addEventListener('click', applyFilters);
+    searchInput.addEventListener('keyup', (e) => { if (e.key === 'Enter') applyFilters(); });
+
+    // --- Sort ---
+    document.getElementById('sort-select').addEventListener('change', function() {
+      const cardsArr = [...cards];
+      if (this.value === 'price-low') cardsArr.sort((a,b) => a.dataset.price - b.dataset.price);
+      else if (this.value === 'price-high') cardsArr.sort((a,b) => b.dataset.price - a.dataset.price);
+      cardsArr.forEach(c => grid.appendChild(c));
+    });
+
+    // --- List/Map toggle ---
     const btnList = document.getElementById('btn-list');
     const btnMap = document.getElementById('btn-map');
     const mapEl = document.getElementById('map');
-    const gridEl = document.getElementById('listings-grid');
-
     btnMap.addEventListener('click', () => {
       btnList.classList.remove('toggle-btn--active');
       btnMap.classList.add('toggle-btn--active');
       mapEl.classList.add('listings__map--visible');
-      gridEl.style.display = 'none';
+      grid.style.display = 'none';
       initMap();
     });
-
     btnList.addEventListener('click', () => {
       btnMap.classList.remove('toggle-btn--active');
       btnList.classList.add('toggle-btn--active');
       mapEl.classList.remove('listings__map--visible');
-      gridEl.style.display = 'flex';
+      grid.style.display = 'flex';
     });
 
     let mapInitialized = false;
     function initMap() {
       if (!mapInitialized) {
-        const map = L.map('map').setView([23.8103, 90.4125], 12);
+        const map = L.map('map').setView([23.8103, 90.4125], 7);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
-        const locations = [
-          [23.7936, 90.3953, 'Gulshan 2, Dhaka', '৳45 Lakh'],
-          [24.3636, 88.6, 'Rajshahi', '৳18 Lakh'],
-          [24.8949, 91.8667, 'Sylhet', '৳32 Lakh'],
-          [22.8456, 89.5403, 'Khulna', '৳22 Lakh'],
-          [23.7464, 90.3742, 'Dhanmondi, Dhaka', '৳85 Lakh']
-        ];
-        locations.forEach(loc => {
-          L.marker([loc[0], loc[1]]).addTo(map).bindPopup(`<b>${loc[2]}</b><br>${loc[3]}`);
+        [[23.7936,90.3953,'Gulshan, Dhaka','৳45L'],[24.3636,88.6,'Rajshahi','৳18L'],[24.8949,91.8667,'Sylhet','৳32L'],[22.8456,89.5403,'Khulna','৳22L'],[23.7464,90.3742,'Dhanmondi','৳85L']].forEach(l => {
+          L.marker([l[0],l[1]]).addTo(map).bindPopup(`<b>${l[2]}</b><br>${l[3]}`);
         });
         mapInitialized = true;
       }
     }
 
-    // Load more
+    // --- Load more ---
     document.getElementById('load-more').addEventListener('click', function() {
       this.textContent = 'Loading...';
-      setTimeout(() => {
-        this.textContent = 'No more properties';
-        this.disabled = true;
-      }, 1000);
+      setTimeout(() => { this.textContent = 'No more properties'; this.disabled = true; }, 1000);
     });
+
+    // --- URL params (Find Prices auto-opens price filter) ---
+    if (window.location.search.includes('filter=price')) {
+      const dd = document.getElementById('dd-price');
+      const pill = dd.closest('.filter-wrap').querySelector('.filter-pill');
+      if (dd) dd.classList.add('filter-dropdown--open');
+      if (pill) pill.classList.add('filter-pill--open');
+    }
   </script>
 </body>
 </html>
