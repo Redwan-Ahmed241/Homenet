@@ -1,0 +1,28 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compileOnSave": false,
+  "files": [],
+  "references": [
+    {
+      "path": "./packages/strings"
+    },
+    {
+      "path": "./packages/colors"
+    },
+    {
+      "path": "./packages/async"
+    },
+    {
+      "path": "./packages/utils"
+    },
+    {
+      "path": "./apps/api-e2e"
+    },
+    {
+      "path": "./apps/api"
+    },
+    {
+      "path": "./libs/backend/db"
+    }
+  ]
+}

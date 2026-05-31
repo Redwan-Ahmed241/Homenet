@@ -1,89 +1,206 @@
-# Homenet — Bangladesh Property Marketplace
+# Nx TypeScript Repository
 
-Homenet is a premium, trust-focused online marketplace for buying and selling land, apartments, and commercial properties in Bangladesh. The platform is inspired by Hemnet (Sweden) and adapted for the Bangladesh real estate market.
+<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
 
-## Purpose
+✨ A repository showcasing key [Nx](https://nx.dev) features for TypeScript monorepos ✨
+## Finish your Nx platform setup
 
-Homenet solves the key pain points in Bangladesh's property market:
+🚀 [Finish setting up your workspace](https://cloud.nx.app/connect/Z9ABcfwZ68) to get faster builds with remote caching, distributed task execution, and self-healing CI. [Learn more about Nx Cloud](https://nx.dev/ci/intro/why-nx-cloud).
 
-- **Trust & Verification** — Every property undergoes legal verification (title deed, survey sketch, mutation, encumbrance) with visible trust badges
-- **Financial Clarity** — Built-in mortgage calculator compares EMI rates from multiple banks
-- **Insurance Options** — Property insurance plans to protect your investment
-- **Guided User Experience** — Simple, jargon-free interface designed for non-tech users with large touch targets and clear language
+## 📦 Project Overview
 
-## Core User Flow
+This repository demonstrates a production-ready TypeScript monorepo with:
 
-```
-Discover Property → Verify → Compare Mortgage → Add Insurance → Contact Owner
-```
+- **3 Publishable Packages** - Ready for NPM publishing
 
-## Features
+  - `@org/strings` - String manipulation utilities
+  - `@org/async` - Async utility functions with retry logic
+  - `@org/colors` - Color conversion and manipulation utilities
 
-| Feature | Description |
-|---------|-------------|
-| **Property Listings** | Browse verified land plots, apartments, commercial properties across Bangladesh |
-| **Legal Verification** | Green checkmarks for verified properties, pending items clearly shown |
-| **Mortgage Calculator** | Real-time EMI calculation with lender comparison from top banks |
-| **Property Insurance** | Basic and Premium plans with feature comparison |
-| **User Dashboard** | Save properties, track verification progress, access financial tools |
-| **Mobile-First Design** | Responsive layout for all screen sizes |
+- **1 Internal Library**
+  - `@org/utils` - Shared utilities (private, not published)
 
-## Tech Stack
+## 🚀 Quick Start
 
-- **HTML5** — Semantic markup
-- **Vanilla CSS** — Custom design system with CSS variables
-- **Vanilla JavaScript** — Interactivity, Chart.js for data visualization, Leaflet for maps
-- **External Libraries**: Chart.js (charts), Leaflet (maps)
+```bash
+# Clone the repository
+git clone <your-fork-url>
+cd typescript-template
 
-## Bangladesh-Specific Features
+# Install dependencies
+npm install
 
-- Land units: katha, bigha, decimal
-- Apartment units: sqft
-- Currency: ৳ (Taka), displayed in Lakh/Crore format
+# Build all packages
+npx nx run-many -t build
 
-## File Structure
+# Run tests
+npx nx run-many -t test
 
-```
-Hemnet/
-├── index.html          # Homepage with search, housing news, top listings
-├── listings.html       # Property search results with filters
-├── property.html      # Property detail page with gallery, verification, mortgage preview
-├── mortgage.html      # Mortgage calculator and bank comparison
-├── insurance.html     # Insurance plans and FAQ
-├── dashboard.html    # User dashboard with saved properties
-├── css/
-│   └── styles.css    # Design system and all component styles
-├── js/
-│   └── main.js       # Common interactions
-└── images/           # Property and news images
+# Lint all projects
+npx nx run-many -t lint
+
+# Run everything in parallel
+npx nx run-many -t lint test build --parallel=3
+
+# Visualize the project graph
+npx nx graph
 ```
 
-## Design System
+## ⭐ Featured Nx Capabilities
 
-- **Primary Color**: `#0a8a2a` (green)
-- **Font**: Inter (Google Fonts)
-- **Max Container Width**: 960px
-- **Breakpoints**: Mobile (<600px), Tablet (600-959px), Desktop (960px+)
+This repository showcases several powerful Nx features:
 
-## Getting Started
+### 1. 🔒 Module Boundaries
 
-Open any `.html` file directly in a browser. No build step or server required.
+Enforces architectural constraints using tags. Each package has specific dependencies it can use:
 
-## External Dependencies
+- `scope:shared` (utils) - Can be used by all packages
+- `scope:strings` - Can only depend on shared utilities
+- `scope:async` - Can only depend on shared utilities
+- `scope:colors` - Can only depend on shared utilities
 
-| Library | Purpose | CDN |
-|---------|---------|-----|
-| Inter Font | Typography | Google Fonts |
-| Chart.js 4.x | Charts | cdn.jsdelivr.net/npm/chart.js |
-| Leaflet.js 1.9.x | Maps | unpkg.com/leaflet |
+**Try it out:**
 
-## Browser Support
+```bash
+# See the current project graph and boundaries
+npx nx graph
 
-- Chrome (latest)
-- Firefox (latest)
-- Safari (latest)
-- Edge (latest)
+# View a specific project's details
+npx nx show project strings --web
+```
 
-## License
+[Learn more about module boundaries →](https://nx.dev/features/enforce-module-boundaries)
 
-© 2025 Homenet Bangladesh
+### 2. 🛠️ Custom Run Commands
+
+Packages can define custom commands beyond standard build/test/lint:
+
+```bash
+# Run the custom build-base command for strings package
+npx nx run strings:build-base
+
+# See all available targets for a project
+npx nx show project strings
+```
+
+[Learn more about custom run commands →](https://nx.dev/concepts/executors-and-configurations)
+
+### 3. 🔧 Self-Healing CI
+
+The CI pipeline includes `nx fix-ci` which automatically identifies and suggests fixes for common issues. To test it, you can make a change to `async-retry.spec.ts` so that it fails, and create a PR.
+
+```bash
+# Run tests and see the failure
+npx nx test async
+
+# In CI, this command provides automated fixes
+npx nx fix-ci
+```
+
+[Learn more about self-healing CI →](https://nx.dev/ci/features/self-healing-ci)
+
+### 4. 📦 Package Publishing
+
+Manage releases and publishing with Nx Release:
+
+```bash
+# Dry run to see what would be published
+npx nx release --dry-run
+
+# Version and release packages
+npx nx release
+
+# Publish only specific packages
+npx nx release publish --projects=strings,colors
+```
+
+[Learn more about Nx Release →](https://nx.dev/features/manage-releases)
+
+## 📁 Project Structure
+
+```
+├── packages/
+│   ├── strings/     [scope:strings] - String utilities (publishable)
+│   ├── async/       [scope:async]   - Async utilities (publishable)
+│   ├── colors/      [scope:colors]  - Color utilities (publishable)
+│   └── utils/       [scope:shared]  - Shared utilities (private)
+├── nx.json          - Nx configuration
+├── tsconfig.json    - TypeScript configuration
+└── eslint.config.mjs - ESLint with module boundary rules
+```
+
+## 🏷️ Understanding Tags
+
+This repository uses tags to enforce module boundaries:
+
+| Package        | Tag             | Can Import From        |
+| -------------- | --------------- | ---------------------- |
+| `@org/utils`   | `scope:shared`  | Nothing (base library) |
+| `@org/strings` | `scope:strings` | `scope:shared`         |
+| `@org/async`   | `scope:async`   | `scope:shared`         |
+| `@org/colors`  | `scope:colors`  | `scope:shared`         |
+
+The ESLint configuration enforces these boundaries, preventing circular dependencies and maintaining clean architecture.
+
+## 🧪 Testing Module Boundaries
+
+To see module boundary enforcement in action:
+
+1. Try importing `@org/colors` into `@org/strings`
+2. Run `npx nx lint strings`
+3. You'll see an error about violating module boundaries
+
+## 📚 Useful Commands
+
+```bash
+# Project exploration
+npx nx graph                                    # Interactive dependency graph
+npx nx list                                     # List installed plugins
+npx nx show project strings --web              # View project details
+
+# Development
+npx nx build strings                           # Build a specific package
+npx nx test async                              # Test a specific package
+npx nx lint colors                             # Lint a specific package
+
+# Running multiple tasks
+npx nx run-many -t build                       # Build all projects
+npx nx run-many -t test --parallel=3          # Test in parallel
+npx nx run-many -t lint test build            # Run multiple targets
+
+# Affected commands (great for CI)
+npx nx affected -t build                       # Build only affected projects
+npx nx affected -t test                        # Test only affected projects
+
+# Release management
+npx nx release --dry-run                       # Preview release changes
+npx nx release                                 # Create a new release
+```
+
+## Nx Cloud
+
+Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
+
+- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+
+## 🔗 Learn More
+
+- [Nx Documentation](https://nx.dev)
+- [Module Boundaries](https://nx.dev/features/enforce-module-boundaries)
+- [Custom Commands](https://nx.dev/concepts/executors-and-configurations)
+- [Self-Healing CI](https://nx.dev/ci/features/self-healing-ci)
+- [Releasing Packages](https://nx.dev/features/manage-releases)
+- [Nx Cloud](https://nx.dev/ci/intro/why-nx-cloud)
+
+## 💬 Community
+
+Join the Nx community:
+
+- [Discord](https://go.nx.dev/community)
+- [X (Twitter)](https://twitter.com/nxdevtools)
+- [LinkedIn](https://www.linkedin.com/company/nrwl)
+- [YouTube](https://www.youtube.com/@nxdevtools)
+- [Blog](https://nx.dev/blog)
