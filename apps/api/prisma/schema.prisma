@@ -3,12 +3,86 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
+// ─── Enums ───────────────────────────────────────────────────────────────────
+
+enum RoleName {
+  ADMIN
+  OWNER
+  MEMBER
+  GUEST
+}
+
+enum PermissionName {
+  CREATE_POST
+  EDIT_POST
+  DELETE_POST
+  MANAGE_USERS
+}
+
+// ─── User ────────────────────────────────────────────────────────────────────
+
 model User {
-  id    Int     @id @default(autoincrement())
-  email String  @unique
-  name  String?
+  id                String    @id @unique @default(uuid())
+  phone             String
+  email             String
+  password_hash     String
+  full_name         String
+  avatar_url        String?
+  phone_verified_at DateTime?
+  email_verified_at DateTime?
+  created_at        DateTime  @default(now())
+  updated_at        DateTime  @updatedAt
+
+  user_roles UserRole[]
+}
+
+// ─── Role ────────────────────────────────────────────────────────────────────
+
+model Role {
+  id         String   @id @default(uuid())
+  name       RoleName
+  created_at DateTime @default(now())
+
+  user_roles       UserRole[]
+  role_permissions RolePermission[]
+}
+
+// ─── UserRole (join table: User ↔ Role) ──────────────────────────────────────
+
+model UserRole {
+  id      String @id @default(uuid())
+  user_id String
+  role_id String
+
+  user User @relation(fields: [user_id], references: [id])
+  role Role @relation(fields: [role_id], references: [id])
+
+  @@unique([user_id, role_id])
+}
+
+// ─── Permission ──────────────────────────────────────────────────────────────
+
+model Permission {
+  id         String         @id @default(uuid())
+  name       PermissionName
+  created_at DateTime       @default(now())
+
+  role_permissions RolePermission[]
+}
+
+// ─── RolePermission (join table: Role ↔ Permission) ──────────────────────────
+
+model RolePermission {
+  id            String @id @default(uuid())
+  role_id       String
+  permission_id String
+
+  role       Role       @relation(fields: [role_id], references: [id])
+  permission Permission @relation(fields: [permission_id], references: [id])
+
+  @@unique([role_id, permission_id])
 }
