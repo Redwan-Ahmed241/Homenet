@@ -34,7 +34,7 @@ describe('AuthService', () => {
       update: jest.fn(),
       updateMany: jest.fn(),
     },
-    $transaction: jest.fn(async (arg) => {
+    $transaction: jest.fn(async (arg: any): Promise<any> => {
       if (Array.isArray(arg)) {
         return Promise.all(arg);
       }
