@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../config/prisma/prisma.service';
+import { PrismaService } from '../../config/prisma/prisma.service.js';
 
 @Injectable()
 export class UserService {
@@ -9,14 +9,18 @@ export class UserService {
     return this.prisma.user.findMany({
       select: {
         id: true,
-        phone: true,
-        email: true,
         full_name: true,
         avatar_url: true,
-        phone_verified_at: true,
-        email_verified_at: true,
         created_at: true,
         updated_at: true,
+        auth_identities: {
+          select: {
+            provider: true,
+            email: true,
+            phone: true,
+            verified_at: true,
+          },
+        },
       },
     });
   }
@@ -26,14 +30,18 @@ export class UserService {
       where: { id },
       select: {
         id: true,
-        phone: true,
-        email: true,
         full_name: true,
         avatar_url: true,
-        phone_verified_at: true,
-        email_verified_at: true,
         created_at: true,
         updated_at: true,
+        auth_identities: {
+          select: {
+            provider: true,
+            email: true,
+            phone: true,
+            verified_at: true,
+          },
+        },
       },
     });
   }

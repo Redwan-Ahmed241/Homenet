@@ -1,6 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { PrismaService } from '../../config/prisma/prisma.service';
-import { RoleName, PermissionName } from '@prisma/client';
+import { PrismaService } from '../../config/prisma/prisma.service.js';
 
 @Injectable()
 export class RoleService {
@@ -58,7 +57,7 @@ export class RoleService {
 
   // ── Permission check ──────────────────────────────────
 
-  async getUserPermissions(userId: string): Promise<PermissionName[]> {
+  async getUserPermissions(userId: string): Promise<string[]> {
     const userRoles = await this.prisma.userRole.findMany({
       where: { user_id: userId },
       include: {
