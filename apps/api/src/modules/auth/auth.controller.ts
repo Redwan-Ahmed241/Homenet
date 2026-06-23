@@ -16,6 +16,7 @@ import { Public } from '../../common/decorators/public.decorator.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../../common/decorators/current-user.decorator.js';
 import { LoginDto } from './dto/login.dto.js';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('auth')
 export class AuthController {
@@ -31,7 +32,10 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  login(@Req() req: { user: { id: string; email: string; full_name: string; avatar_url: string | null } }) {
+  login(
+    @Body() _dto: LoginDto, // Consumed by Passport's LocalStrategy; declared here for Swagger
+    @Req() req: { user: { id: string; email: string; full_name: string; avatar_url: string | null } },
+  ) {
     return this.authService.login(req.user);
   }
 
@@ -42,6 +46,7 @@ export class AuthController {
     return this.authService.refreshTokens(dto.refresh_token);
   }
 
+  @ApiBearerAuth()
   @HttpCode(HttpStatus.OK)
   @Post('logout')
   async logout(
@@ -52,6 +57,7 @@ export class AuthController {
     return { message: 'Logged out successfully' };
   }
 
+  @ApiBearerAuth()
   @Get('me')
   getProfile(@CurrentUser() user: AuthenticatedUser) {
     return this.authService.getProfile(user.id);
