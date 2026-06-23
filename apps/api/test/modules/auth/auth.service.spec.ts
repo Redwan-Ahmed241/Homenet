@@ -4,7 +4,7 @@ import { PrismaService } from '../../../src/config/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { LoggerService } from '../../../src/common/logger/logger.service.js';
-import { BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
+import { AppException } from '../../../src/common/errors/app.exception.js';
 import * as bcrypt from 'bcrypt';
 
 jest.mock('bcrypt');
@@ -79,7 +79,7 @@ describe('AuthService', () => {
   });
 
   describe('register', () => {
-    it('should throw BadRequestException if password validation fails', async () => {
+    it('should throw AppException if password validation fails', async () => {
       (validatePassword as jest.Mock).mockReturnValue({ isValid: false, errors: ['Too short'] });
 
       await expect(
@@ -88,10 +88,10 @@ describe('AuthService', () => {
           email: 'test@test.com',
           password: 'pass',
         }),
-      ).rejects.toThrow(BadRequestException);
+      ).rejects.toThrow(AppException);
     });
 
-    it('should throw ConflictException if email already registered', async () => {
+    it('should throw AppException if email already registered', async () => {
       (validatePassword as jest.Mock).mockReturnValue({ isValid: true, errors: [] });
       mockPrismaService.authIdentity.findFirst.mockResolvedValue({ id: 'existing_id' });
 
@@ -101,7 +101,7 @@ describe('AuthService', () => {
           email: 'test@test.com',
           password: 'password123',
         }),
-      ).rejects.toThrow(ConflictException);
+      ).rejects.toThrow(AppException);
     });
 
     it('should successfully register a user and return tokens', async () => {
@@ -133,20 +133,20 @@ describe('AuthService', () => {
   });
 
   describe('validateLocalUser', () => {
-    it('should throw UnauthorizedException if user not found', async () => {
+    it('should throw AppException if user not found', async () => {
       mockPrismaService.authIdentity.findFirst.mockResolvedValue(null);
 
-      await expect(authService.validateLocalUser('test@test.com', 'password123')).rejects.toThrow(UnauthorizedException);
+      await expect(authService.validateLocalUser('test@test.com', 'password123')).rejects.toThrow(AppException);
     });
 
-    it('should throw UnauthorizedException if password does not match', async () => {
+    it('should throw AppException if password does not match', async () => {
       mockPrismaService.authIdentity.findFirst.mockResolvedValue({
         password_hash: 'hash',
         user: { id: 'user_id', full_name: 'Test' },
       });
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
 
-      await expect(authService.validateLocalUser('test@test.com', 'password123')).rejects.toThrow(UnauthorizedException);
+      await expect(authService.validateLocalUser('test@test.com', 'password123')).rejects.toThrow(AppException);
     });
 
     it('should return user info if validation succeeds', async () => {
@@ -185,9 +185,9 @@ describe('AuthService', () => {
   });
 
   describe('refreshTokens', () => {
-    it('should throw UnauthorizedException if token not found', async () => {
+    it('should throw AppException if token not found', async () => {
       mockPrismaService.refreshToken.findFirst.mockResolvedValue(null);
-      await expect(authService.refreshTokens('old_token')).rejects.toThrow(UnauthorizedException);
+      await expect(authService.refreshTokens('old_token')).rejects.toThrow(AppException);
     });
 
     it('should throw UnauthorizedException if token is expired', async () => {
@@ -195,7 +195,7 @@ describe('AuthService', () => {
       pastDate.setDate(pastDate.getDate() - 1);
       mockPrismaService.refreshToken.findFirst.mockResolvedValue({ id: 'token_id', expires_at: pastDate });
       
-      await expect(authService.refreshTokens('old_token')).rejects.toThrow(UnauthorizedException);
+      await expect(authService.refreshTokens('old_token')).rejects.toThrow(AppException);
       expect(mockPrismaService.refreshToken.update).toHaveBeenCalled();
     });
 

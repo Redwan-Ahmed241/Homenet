@@ -1,14 +1,11 @@
-import {
-  Injectable,
-  ConflictException,
-  UnauthorizedException,
-  BadRequestException,
-} from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../../config/prisma/prisma.service.js';
 import { validatePassword } from '../../common/utils/password.util.js';
 import { RegisterDto } from './dto/register.dto.js';
+import { AppException } from '../../common/errors/app.exception.js';
+import { AUTH_ERRORS } from '../../common/errors/error-codes.js';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { LoggerService } from '../../common/logger/logger.service.js';
@@ -50,10 +47,7 @@ export class AuthService {
     // 1. Validate password strength
     const validation = validatePassword(dto.password);
     if (!validation.isValid) {
-      throw new BadRequestException({
-        message: 'Password validation failed',
-        errors: validation.errors,
-      });
+      throw new AppException(AUTH_ERRORS.PASSWORD_TOO_WEAK, validation.errors.join('; '));
     }
 
     // 2. Check if email is already registered under LOCAL provider
@@ -65,7 +59,7 @@ export class AuthService {
     });
 
     if (existingIdentity) {
-      throw new ConflictException('An account with this email already exists');
+      throw new AppException(AUTH_ERRORS.EMAIL_ALREADY_EXISTS);
     }
 
     // 3. Hash password
@@ -132,7 +126,7 @@ export class AuthService {
         functionName: 'validateLocalUser',
         lineNumber: 122,
       });
-      throw new UnauthorizedException('Invalid email or password');
+      throw new AppException(AUTH_ERRORS.INVALID_CREDENTIALS);
     }
 
     const isPasswordValid = await bcrypt.compare(password, identity.password_hash);
@@ -143,7 +137,7 @@ export class AuthService {
         functionName: 'validateLocalUser',
         lineNumber: 130,
       });
-      throw new UnauthorizedException('Invalid email or password');
+      throw new AppException(AUTH_ERRORS.INVALID_CREDENTIALS);
     }
 
     return {
@@ -201,7 +195,7 @@ export class AuthService {
     });
 
     if (!storedToken) {
-      throw new UnauthorizedException('Invalid refresh token');
+      throw new AppException(AUTH_ERRORS.INVALID_REFRESH_TOKEN);
     }
 
     if (storedToken.expires_at < new Date()) {
@@ -210,13 +204,13 @@ export class AuthService {
         where: { id: storedToken.id },
         data: { revoked_at: new Date() },
       });
-      throw new UnauthorizedException('Refresh token has expired');
+      throw new AppException(AUTH_ERRORS.REFRESH_TOKEN_EXPIRED);
     }
 
     const email = storedToken.user.auth_identities[0]?.email;
 
     if (!email) {
-      throw new UnauthorizedException('User identity not found');
+      throw new AppException(AUTH_ERRORS.USER_IDENTITY_NOT_FOUND);
     }
 
     // Rotate: revoke old, issue new
@@ -275,7 +269,7 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('User not found');
+      throw new AppException(AUTH_ERRORS.USER_NOT_FOUND);
     }
 
     const localIdentity = user.auth_identities[0];
