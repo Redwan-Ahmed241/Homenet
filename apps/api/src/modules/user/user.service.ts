@@ -1,12 +1,16 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma/prisma.service.js';
+import { LoggerService } from '../../common/logger/logger.service.js';
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly logger: LoggerService,
+  ) {}
 
   async findAll() {
-    return this.prisma.user.findMany({
+    const users = await this.prisma.user.findMany({
       select: {
         id: true,
         full_name: true,
@@ -23,10 +27,18 @@ export class UserService {
         },
       },
     });
+
+    this.logger.debug(`Fetched all users. Count: ${users.length}`, {
+      fileName: 'user.service.ts',
+      functionName: 'findAll',
+      lineNumber: 27,
+    });
+
+    return users;
   }
 
   async findOne(id: string) {
-    return this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { id },
       select: {
         id: true,
@@ -44,5 +56,21 @@ export class UserService {
         },
       },
     });
+
+    if (user) {
+      this.logger.debug(`Fetched user profile for id: ${id}`, {
+        fileName: 'user.service.ts',
+        functionName: 'findOne',
+        lineNumber: 49,
+      });
+    } else {
+      this.logger.warn(`User profile not found for id: ${id}`, {
+        fileName: 'user.service.ts',
+        functionName: 'findOne',
+        lineNumber: 55,
+      });
+    }
+
+    return user;
   }
 }

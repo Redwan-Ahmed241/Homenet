@@ -8,11 +8,13 @@ import { AuthModule } from './modules/auth/auth.module.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
+import { LoggerModule } from './common/logger/logger.module.js';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     PrismaModule,
+    LoggerModule,
     AuthModule,
     UserModule,
     RoleModule,

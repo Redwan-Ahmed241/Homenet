@@ -3,6 +3,7 @@ import { AuthService } from '../../../src/modules/auth/auth.service';
 import { PrismaService } from '../../../src/config/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { LoggerService } from '../../../src/common/logger/logger.service.js';
 import { BadRequestException, ConflictException, UnauthorizedException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 
@@ -50,6 +51,15 @@ describe('AuthService', () => {
     get: jest.fn(),
   };
 
+  const mockLoggerService = {
+    trace: jest.fn(),
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    fatal: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -57,6 +67,7 @@ describe('AuthService', () => {
         { provide: PrismaService, useValue: mockPrismaService },
         { provide: JwtService, useValue: mockJwtService },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: LoggerService, useValue: mockLoggerService },
       ],
     }).compile();
 

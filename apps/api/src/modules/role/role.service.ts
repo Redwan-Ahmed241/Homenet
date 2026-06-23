@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../config/prisma/prisma.service.js';
+import { LoggerService } from '../../common/logger/logger.service.js';
 
 @Injectable()
 export class RoleService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly logger: LoggerService,
+  ) {}
 
   // ── Roles ──────────────────────────────────────────────
 
@@ -23,15 +27,31 @@ export class RoleService {
   // ── User ↔ Role ────────────────────────────────────────
 
   async assignRoleToUser(userId: string, roleId: string) {
-    return this.prisma.userRole.create({
+    const result = await this.prisma.userRole.create({
       data: { user_id: userId, role_id: roleId },
     });
+
+    this.logger.info(`Assigned role ${roleId} to user ${userId}`, {
+      fileName: 'role.service.ts',
+      functionName: 'assignRoleToUser',
+      lineNumber: 31,
+    });
+
+    return result;
   }
 
   async removeRoleFromUser(userId: string, roleId: string) {
-    return this.prisma.userRole.deleteMany({
+    const result = await this.prisma.userRole.deleteMany({
       where: { user_id: userId, role_id: roleId },
     });
+
+    this.logger.info(`Removed role ${roleId} from user ${userId}`, {
+      fileName: 'role.service.ts',
+      functionName: 'removeRoleFromUser',
+      lineNumber: 42,
+    });
+
+    return result;
   }
 
   async getUserRoles(userId: string) {
@@ -44,15 +64,31 @@ export class RoleService {
   // ── Role ↔ Permission ─────────────────────────────────
 
   async assignPermissionToRole(roleId: string, permissionId: string) {
-    return this.prisma.rolePermission.create({
+    const result = await this.prisma.rolePermission.create({
       data: { role_id: roleId, permission_id: permissionId },
     });
+
+    this.logger.info(`Assigned permission ${permissionId} to role ${roleId}`, {
+      fileName: 'role.service.ts',
+      functionName: 'assignPermissionToRole',
+      lineNumber: 65,
+    });
+
+    return result;
   }
 
   async removePermissionFromRole(roleId: string, permissionId: string) {
-    return this.prisma.rolePermission.deleteMany({
+    const result = await this.prisma.rolePermission.deleteMany({
       where: { role_id: roleId, permission_id: permissionId },
     });
+
+    this.logger.info(`Removed permission ${permissionId} from role ${roleId}`, {
+      fileName: 'role.service.ts',
+      functionName: 'removePermissionFromRole',
+      lineNumber: 76,
+    });
+
+    return result;
   }
 
   // ── Permission check ──────────────────────────────────

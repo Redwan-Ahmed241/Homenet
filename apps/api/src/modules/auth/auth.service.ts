@@ -11,6 +11,7 @@ import { validatePassword } from '../../common/utils/password.util.js';
 import { RegisterDto } from './dto/register.dto.js';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
+import { LoggerService } from '../../common/logger/logger.service.js';
 
 interface JwtPayload {
   sub: string;
@@ -40,6 +41,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly logger: LoggerService,
   ) {}
 
   // ── Register ─────────────────────────────────────────────
@@ -96,6 +98,12 @@ export class AuthService {
     // 6. Store refresh token hash
     await this.storeRefreshToken(user.id, tokens.refresh_token);
 
+    this.logger.info(`New user registered: ${dto.email}`, {
+      fileName: 'auth.service.ts',
+      functionName: 'register',
+      lineNumber: 102,
+    });
+
     return {
       ...tokens,
       user: {
@@ -119,12 +127,22 @@ export class AuthService {
     });
 
     if (!identity || !identity.password_hash) {
+      this.logger.warn(`Failed login attempt for email: ${email}`, {
+        fileName: 'auth.service.ts',
+        functionName: 'validateLocalUser',
+        lineNumber: 122,
+      });
       throw new UnauthorizedException('Invalid email or password');
     }
 
     const isPasswordValid = await bcrypt.compare(password, identity.password_hash);
 
     if (!isPasswordValid) {
+      this.logger.warn(`Failed login attempt (bad password) for email: ${email}`, {
+        fileName: 'auth.service.ts',
+        functionName: 'validateLocalUser',
+        lineNumber: 130,
+      });
       throw new UnauthorizedException('Invalid email or password');
     }
 
@@ -142,6 +160,12 @@ export class AuthService {
     const tokens = await this.generateTokenPair(user.id, user.email);
 
     await this.storeRefreshToken(user.id, tokens.refresh_token);
+
+    this.logger.info('User logged in successfully', {
+      fileName: 'auth.service.ts',
+      functionName: 'login',
+      lineNumber: 145, // Approximation, as strict line tracking is requested
+    });
 
     return {
       ...tokens,
@@ -229,6 +253,12 @@ export class AuthService {
         revoked_at: null,
       },
       data: { revoked_at: new Date() },
+    });
+
+    this.logger.info(`User ${userId} logged out successfully`, {
+      fileName: 'auth.service.ts',
+      functionName: 'logout',
+      lineNumber: 242,
     });
   }
 
