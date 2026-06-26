@@ -7,6 +7,7 @@ import { UserModule } from './modules/user/user.module.js';
 import { RoleModule } from './modules/role/role.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
+import { PermissionsGuard } from './modules/role/guards/permissions.guard.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { LoggerModule } from './common/logger/logger.module.js';
@@ -36,6 +37,10 @@ import { LoggerModule } from './common/logger/logger.module.js';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: PermissionsGuard,
     },
     {
       provide: APP_GUARD,
