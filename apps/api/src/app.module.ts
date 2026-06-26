@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD } from '@nestjs/core';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { PrismaModule } from './config/prisma/prisma.module.js';
 import { UserModule } from './modules/user/user.module.js';
 import { RoleModule } from './modules/role/role.module.js';
@@ -13,6 +14,16 @@ import { LoggerModule } from './common/logger/logger.module.js';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => [
+        {
+          ttl: config.get('THROTTLE_TTL', 60000),
+          limit: config.get('THROTTLE_LIMIT', 10),
+        },
+      ],
+    }),
     PrismaModule,
     LoggerModule,
     AuthModule,
@@ -25,6 +36,10 @@ import { LoggerModule } from './common/logger/logger.module.js';
     {
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
     },
   ],
 })
