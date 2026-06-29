@@ -105,10 +105,10 @@ export class RoleService {
       },
     });
 
-    const permissions = userRoles.flatMap((ur) =>
-      ur.role.role_permissions.map((rp) => rp.permission.name),
+    const permissions = userRoles.flatMap((ur: { role: { role_permissions: { permission: { name: string } }[] } }) =>
+      ur.role.role_permissions.map((rp: { permission: { name: string } }) => rp.permission.name),
     );
 
-    return [...new Set(permissions)];
+    return [...new Set(permissions)] as string[];
   }
 }

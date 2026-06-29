@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../config/prisma/prisma.service.js';
 import { validatePassword } from '../../common/utils/password.util.js';
 import { RegisterDto } from './dto/register.dto.js';
@@ -66,7 +67,7 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.password, this.BCRYPT_ROUNDS);
 
     // 4. Create User + AuthIdentity in a transaction
-    const user = await this.prisma.$transaction(async (tx) => {
+    const user = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const newUser = await tx.user.create({
         data: {
           full_name: dto.full_name,
