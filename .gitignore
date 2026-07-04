@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 
+<<<<<<< HEAD
 # Logs
 logs/
 *.log
@@ -62,3 +63,12 @@ jest-html-reporters-*.html
 
 # Misc
 *.tgz
+=======
+# wrangler files
+.wrangler
+.dev.vars*
+!.dev.vars.example
+.env*
+!.env.example
+docs
+>>>>>>> 13d504b (chore: ignore docs directory in git repository)
