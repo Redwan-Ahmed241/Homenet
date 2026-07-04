@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "hemnet",
+  "name": "homenet",
   "compatibility_date": "2026-05-12",
   "observability": {
     "enabled": true
