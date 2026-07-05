@@ -128,3 +128,32 @@ model RolePermission {
   @@index([role_id])
   @@index([permission_id])
 }
+
+model Area {
+  id             String   @id @default(uuid())
+  name           String
+  parent_area_id String?
+  city           String   @default("Dhaka")
+
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  parent   Area?  @relation("AreaHierarchy", fields: [parent_area_id], references: [id], onDelete: SetNull)
+  children Area[] @relation("AreaHierarchy")
+
+  properties Property[]
+
+  @@index([parent_area_id])
+  @@index([city])
+}
+
+model Property {
+  id         String   @id @default(uuid())
+  area_id    String
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  area Area @relation(fields: [area_id], references: [id], onDelete: Restrict)
+
+  @@index([area_id])
+}

@@ -46,6 +46,13 @@ Error responses follow this shape:
    - [Remove Role from User](#45-remove-role-from-user)
    - [Assign Permission to Role](#46-assign-permission-to-role)
    - [Remove Permission from Role](#47-remove-permission-from-role)
+5. [Areas](#5-areas)
+   - [List All Areas](#51-list-all-areas)
+   - [Get Area by ID](#52-get-area-by-id)
+   - [Get Area Children](#53-get-area-children)
+   - [Create Area](#54-create-area)
+   - [Update Area](#55-update-area)
+   - [Delete Area](#56-delete-area)
 
 ---
 
@@ -741,6 +748,346 @@ Authorization: Bearer <access_token>
 
 ---
 
+## 5. Areas
+
+> Public read endpoints (`GET /areas`, `GET /areas/:id`, `GET /areas/:id/children`) require **no authentication**.
+> Write endpoints (`POST`, `PATCH`, `DELETE`) require a valid **JWT** and the `manage_areas` permission.
+
+| Permission Required | Endpoints |
+|---|---|
+| `manage_areas` | `POST /areas`, `PATCH /areas/:id`, `DELETE /areas/:id` |
+
+---
+
+### 5.1 List All Areas
+
+### `GET /areas`
+
+Returns a paginated list of areas with optional filters. No authentication required.
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|:--------:|-------------|
+| `city` | string | No | Filter by city name |
+| `parent_area_id` | string (UUID) | No | Filter by parent area |
+| `search` | string | No | Case-insensitive name search |
+| `page` | number | No | Page number (default: 1, min: 1) |
+| `limit` | number | No | Items per page (default: 20, min: 1, max: 100) |
+
+**Request:**
+
+```
+GET http://localhost:3000/areas?page=1&limit=20
+```
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "items": [
+      {
+        "id": "uuid-of-area",
+        "name": "Gulshan",
+        "parent_area_id": null,
+        "city": "Dhaka",
+        "created_at": "2026-07-05T10:00:00.000Z",
+        "updated_at": "2026-07-05T10:00:00.000Z",
+        "_count": {
+          "children": 2
+        }
+      }
+    ],
+    "total": 31,
+    "page": 1,
+    "limit": 20,
+    "total_pages": 2
+  }
+}
+```
+
+**Request with filters:**
+
+```
+GET http://localhost:3000/areas?city=Dhaka&search=Gulshan&parent_area_id=uuid-of-parent
+```
+
+---
+
+### 5.2 Get Area by ID
+
+### `GET /areas/:id`
+
+Returns a single area with its parent and children details. No authentication required.
+
+**Request:**
+
+```
+GET http://localhost:3000/areas/uuid-of-area
+```
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "id": "uuid-of-area",
+    "name": "Gulshan",
+    "parent_area_id": null,
+    "city": "Dhaka",
+    "created_at": "2026-07-05T10:00:00.000Z",
+    "updated_at": "2026-07-05T10:00:00.000Z",
+    "parent": null,
+    "children": [
+      {
+        "id": "uuid-of-child",
+        "name": "Gulshan-1"
+      },
+      {
+        "id": "uuid-of-child-2",
+        "name": "Gulshan-2"
+      }
+    ]
+  }
+}
+```
+
+**Error — Not found (404):**
+
+```json
+{
+  "success": false,
+  "message": "Area not found",
+  "error_code": 1400,
+  "data": null
+}
+```
+
+---
+
+### 5.3 Get Area Children
+
+### `GET /areas/:id/children`
+
+Returns all direct sub-areas (children) of the given area. No authentication required.
+
+**Request:**
+
+```
+GET http://localhost:3000/areas/uuid-of-area/children
+```
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": [
+    {
+      "id": "uuid-of-child",
+      "name": "Gulshan-1",
+      "parent_area_id": "uuid-of-area",
+      "city": "Dhaka",
+      "created_at": "2026-07-05T10:00:00.000Z",
+      "updated_at": "2026-07-05T10:00:00.000Z",
+      "_count": {
+        "children": 0
+      }
+    }
+  ]
+}
+```
+
+**Error — Parent area not found (404):**
+
+```json
+{
+  "success": false,
+  "message": "Area not found",
+  "error_code": 1400,
+  "data": null
+}
+```
+
+---
+
+### 5.4 Create Area
+
+### `POST /areas`
+
+Creates a new area. Requires `manage_areas` permission.
+
+**Request:**
+
+```
+POST http://localhost:3000/areas
+Content-Type: application/json
+Authorization: Bearer <access_token>
+```
+
+**Body:**
+
+```json
+{
+  "name": "New Area",
+  "city": "Dhaka",
+  "parent_area_id": "uuid-of-parent-area"
+}
+```
+
+**Optional fields:** `parent_area_id` (UUID of parent area), `city` (default: `"Dhaka"`), `boundary` (WKT polygon string e.g. `"POLYGON((...))"`), `centroid` (WKT point string e.g. `"POINT(90.41 23.79)"`).
+
+**Response (201):**
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "id": "uuid-of-new-area",
+    "name": "New Area",
+    "parent_area_id": "uuid-of-parent-area",
+    "city": "Dhaka",
+    "created_at": "2026-07-05T10:00:00.000Z",
+    "updated_at": "2026-07-05T10:00:00.000Z"
+  }
+}
+```
+
+**Error — Duplicate (409):**
+
+```json
+{
+  "success": false,
+  "message": "An area with this name already exists in the specified city",
+  "error_code": 1401,
+  "data": null
+}
+```
+
+**Error — Validation failure (400):**
+
+```json
+{
+  "success": false,
+  "message": "name should not be empty",
+  "error_code": 1001,
+  "data": {
+    "errors": ["name should not be empty"]
+  }
+}
+```
+
+---
+
+### 5.5 Update Area
+
+### `PATCH /areas/:id`
+
+Updates an existing area. All fields are optional. Requires `manage_areas` permission.
+
+**Request:**
+
+```
+PATCH http://localhost:3000/areas/uuid-of-area
+Content-Type: application/json
+Authorization: Bearer <access_token>
+```
+
+**Body:**
+
+```json
+{
+  "name": "Updated Area Name",
+  "city": "Chittagong"
+}
+```
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "id": "uuid-of-area",
+    "name": "Updated Area Name",
+    "parent_area_id": null,
+    "city": "Chittagong",
+    "created_at": "2026-07-05T10:00:00.000Z",
+    "updated_at": "2026-07-05T10:00:00.000Z"
+  }
+}
+```
+
+**Error — Not found (404):**
+
+```json
+{
+  "success": false,
+  "message": "Area not found",
+  "error_code": 1400,
+  "data": null
+}
+```
+
+---
+
+### 5.6 Delete Area
+
+### `DELETE /areas/:id`
+
+Deletes an area. Blocked if the area has active property listings. Requires `manage_areas` permission.
+
+**Request:**
+
+```
+DELETE http://localhost:3000/areas/uuid-of-area
+Authorization: Bearer <access_token>
+```
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "message": "Area deleted successfully"
+  }
+}
+```
+
+**Error — Not found (404):**
+
+```json
+{
+  "success": false,
+  "message": "Area not found",
+  "error_code": 1400,
+  "data": null
+}
+```
+
+**Error — Has active listings (400):**
+
+```json
+{
+  "success": false,
+  "message": "Cannot delete area with active property listings",
+  "error_code": 1402,
+  "data": null
+}
+```
+
+---
+
 ## Error Codes Quick Reference
 
 | Code | Description | HTTP Status |
@@ -763,6 +1110,9 @@ Authorization: Bearer <access_token>
 | 1302 | Permission not found | 404 |
 | 1303 | Permission already assigned | 409 |
 | 1304 | Insufficient role | 403 |
+| 1400 | Area not found | 404 |
+| 1401 | Area already exists | 409 |
+| 1402 | Cannot delete area with active listings | 400 |
 
 ---
 
@@ -775,5 +1125,10 @@ Authorization: Bearer <access_token>
 5. **List Users** — See all users via `GET /users`
 6. **Refresh** — Rotate your tokens via `POST /auth/refresh`
 7. **Logout** — Revoke a refresh token via `POST /auth/logout`
+8. **List Areas** — View all seeded areas via `GET /areas` (no auth needed)
+9. **Get Area Details** — View a single area via `GET /areas/:id` (no auth needed)
+10. **Get Area Children** — View sub-areas via `GET /areas/:id/children` (no auth needed)
 
 > **For Roles & Permissions**, you'll need to insert roles/permissions directly into the database first (there's no seed data). Use raw SQL or a Prisma script to create roles and permissions before testing those endpoints.
+>
+> **For Areas**, seed data is available. Run `npm run seed:areas` to populate 31 Dhaka areas (10 top-level + 21 children). Read endpoints require no authentication. Write endpoints (create/update/delete) require a JWT with the `manage_areas` permission.

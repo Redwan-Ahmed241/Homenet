@@ -6,6 +6,7 @@ import { PrismaModule } from './config/prisma/prisma.module.js';
 import { UserModule } from './modules/user/user.module.js';
 import { RoleModule } from './modules/role/role.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
+import { AreaModule } from './modules/area/area.module.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { PermissionsGuard } from './modules/role/guards/permissions.guard.js';
 import { AppController } from './app.controller.js';
@@ -30,6 +31,7 @@ import { LoggerModule } from './common/logger/logger.module.js';
     AuthModule,
     UserModule,
     RoleModule,
+    AreaModule,
   ],
   controllers: [AppController],
   providers: [
