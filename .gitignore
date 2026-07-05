@@ -2,6 +2,7 @@
 node_modules/
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 # Logs
 logs/
 *.log
@@ -64,6 +65,8 @@ jest-html-reporters-*.html
 # Misc
 *.tgz
 =======
+=======
+>>>>>>> a4308d8 (Merge: API NestJS project with areas)
 # wrangler files
 .wrangler
 .dev.vars*
@@ -71,4 +74,70 @@ jest-html-reporters-*.html
 .env*
 !.env.example
 docs
+<<<<<<< HEAD
 >>>>>>> 13d504b (chore: ignore docs directory in git repository)
+=======
+=======
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+docs
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Build output
+dist/
+build/
+out/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Cache
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.svelte-kit/
+
+# TypeScript
+*.tsbuildinfo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+
+# Temporary files
+tmp/
+temp/
+
+# Package manager files (optional)
+.pnp/
+.pnp.js
+
+# Testing
+jest-html-reporters-*.html
+
+# Misc
+*.tgz
+>>>>>>> 09f8d2dde898d68962e5d379dceb68915fc082e3
+>>>>>>> a4308d8 (Merge: API NestJS project with areas)
