@@ -13,4 +13,9 @@ export const USER_ERRORS = {
     message: 'Failed to update user profile',
     httpStatus: 500,
   },
+  USER_DELETE_FAILED: {
+    code: 1202,
+    message: 'Failed to delete user',
+    httpStatus: 500,
+  },
 } as const satisfies Record<string, ErrorDefinition>;

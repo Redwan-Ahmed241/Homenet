@@ -38,6 +38,8 @@ Error responses follow this shape:
 3. [Users](#3-users)
    - [List All Users](#31-list-all-users)
    - [Get User by ID](#32-get-user-by-id)
+   - [Update User](#33-update-user)
+   - [Delete User](#34-delete-user)
 4. [Roles & Permissions](#4-roles--permissions)
    - [List All Roles](#41-list-all-roles)
    - [Get Role by ID](#42-get-role-by-id)
@@ -442,6 +444,117 @@ Authorization: Bearer <access_token>
 
 ---
 
+### 3.3 Update User
+
+### `PATCH /users/:id`
+
+Updates a user's profile fields (full_name and/or avatar_url). **JWT required.**
+
+**Request:**
+
+```
+PATCH http://localhost:3000/users/uuid-of-user
+Content-Type: application/json
+Authorization: Bearer <access_token>
+```
+
+**Body (all fields optional):**
+
+```json
+{
+  "full_name": "Jane Doe",
+  "avatar_url": "https://example.com/new-avatar.jpg"
+}
+```
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "id": "uuid-of-user",
+    "full_name": "Jane Doe",
+    "avatar_url": "https://example.com/new-avatar.jpg",
+    "created_at": "2026-06-30T10:00:00.000Z",
+    "updated_at": "2026-07-06T12:00:00.000Z",
+    "auth_identities": [
+      {
+        "provider": "LOCAL",
+        "email": "john@example.com",
+        "phone": null,
+        "verified_at": null
+      }
+    ]
+  }
+}
+```
+
+**Error — Not found (404):**
+
+```json
+{
+  "success": false,
+  "message": "User not found",
+  "error_code": 1200,
+  "data": null
+}
+```
+
+**Error — Validation failure (400):**
+
+```json
+{
+  "success": false,
+  "message": "full_name must be longer than or equal to 2 characters",
+  "error_code": 1001,
+  "data": {
+    "errors": ["full_name must be longer than or equal to 2 characters"]
+  }
+}
+```
+
+---
+
+### 3.4 Delete User
+
+### `DELETE /users/:id`
+
+Permanently deletes a user and all associated data (auth identities, refresh tokens, role assignments — cascaded by the database). **JWT required.**
+
+**Request:**
+
+```
+DELETE http://localhost:3000/users/uuid-of-user
+Authorization: Bearer <access_token>
+```
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "message": "User with id 'uuid-of-user' has been deleted"
+  }
+}
+```
+
+**Error — Not found (404):**
+
+```json
+{
+  "success": false,
+  "message": "User not found",
+  "error_code": 1200,
+  "data": null
+}
+```
+
+---
+
 ## 4. Roles & Permissions
 
 > All role/permission endpoints require a valid **JWT** token.  
@@ -758,6 +871,8 @@ Authorization: Bearer <access_token>
 | 1106 | JWT invalid or expired | 401 |
 | 1107 | Authenticated user not found | 401 |
 | 1200 | User not found | 404 |
+| 1201 | Failed to update user profile | 500 |
+| 1202 | Failed to delete user | 500 |
 | 1300 | Role not found | 404 |
 | 1301 | Role already assigned | 409 |
 | 1302 | Permission not found | 404 |
@@ -773,7 +888,9 @@ Authorization: Bearer <access_token>
 3. **Login** — Get tokens via `POST /auth/login`
 4. **Get Profile** — Test your JWT with `GET /auth/me`
 5. **List Users** — See all users via `GET /users`
-6. **Refresh** — Rotate your tokens via `POST /auth/refresh`
-7. **Logout** — Revoke a refresh token via `POST /auth/logout`
+6. **Update User** — Modify a user's profile via `PATCH /users/:id`
+7. **Delete User** — Remove a user via `DELETE /users/:id`
+8. **Refresh** — Rotate your tokens via `POST /auth/refresh`
+9. **Logout** — Revoke a refresh token via `POST /auth/logout`
 
 > **For Roles & Permissions**, you'll need to insert roles/permissions directly into the database first (there's no seed data). Use raw SQL or a Prisma script to create roles and permissions before testing those endpoints.
