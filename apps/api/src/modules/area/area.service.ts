@@ -334,7 +334,7 @@ export class AreaService {
 
     // Check for active property listings
     const propertyCount = await this.prisma.property.count({
-      where: { area_id: id },
+      where: { area_id: id, status: 'active' },
     });
 
     if (propertyCount > 0) {
