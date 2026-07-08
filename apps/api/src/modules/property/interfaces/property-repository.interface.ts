@@ -94,11 +94,7 @@ export interface PropertyMedia {
 
 export interface IPropertyRepository {
   findPublished(query: PropertyQueryParams): Promise<PaginatedResult<PropertyListItem>>;
-  findWithProximitySearch(
-    query: PropertyQueryParams,
-    cacheKey: string,
-    cacheManager: any,
-  ): Promise<PaginatedResult<PropertyListItem>>;
+  findWithProximitySearch(query: PropertyQueryParams): Promise<PaginatedResult<PropertyListItem>>;
   findPublishedById(id: string): Promise<PropertyDetail | null>;
   incrementViewCount(id: string): Promise<void>;
   findById(id: string): Promise<{ id: string; user_id: string; type: string; status: string } | null>;

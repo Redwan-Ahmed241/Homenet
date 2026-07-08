@@ -13,6 +13,7 @@ import { PermissionsGuard } from './modules/role/guards/permissions.guard.js';
 import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { LoggerModule } from './common/logger/logger.module.js';
+import { CacheServiceModule } from './common/cache/cache.module.js';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { LoggerModule } from './common/logger/logger.module.js';
     }),
     PrismaModule,
     LoggerModule,
+    CacheServiceModule,
     AuthModule,
     UserModule,
     RoleModule,

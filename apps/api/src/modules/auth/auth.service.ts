@@ -1,6 +1,8 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import type { ICacheService } from '../../common/cache/cache.service.interface.js';
+import { CACHE_TTL } from '../../common/cache/cache.service.interface.js';
 import { validatePassword } from '../../common/utils/password.util.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { AppException } from '../../common/errors/app.exception.js';
@@ -39,6 +41,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly logger: LoggerService,
+    @Inject('ICacheService') private readonly cacheService: ICacheService,
   ) {}
 
   async register(dto: RegisterDto): Promise<AuthResponse> {
@@ -66,7 +69,7 @@ export class AuthService {
     this.logger.info(`New user registered: ${dto.email}`, {
       fileName: 'auth.service.ts',
       functionName: 'register',
-      lineNumber: 63,
+      lineNumber: 71,
     });
 
     return {
@@ -87,7 +90,7 @@ export class AuthService {
       this.logger.warn(`Failed login attempt for email: ${email}`, {
         fileName: 'auth.service.ts',
         functionName: 'validateLocalUser',
-        lineNumber: 80,
+        lineNumber: 92,
       });
       throw new AppException(AUTH_ERRORS.INVALID_CREDENTIALS);
     }
@@ -98,7 +101,7 @@ export class AuthService {
       this.logger.warn(`Failed login attempt (bad password) for email: ${email}`, {
         fileName: 'auth.service.ts',
         functionName: 'validateLocalUser',
-        lineNumber: 88,
+        lineNumber: 100,
       });
       throw new AppException(AUTH_ERRORS.INVALID_CREDENTIALS);
     }
@@ -119,7 +122,7 @@ export class AuthService {
     this.logger.info('User logged in successfully', {
       fileName: 'auth.service.ts',
       functionName: 'login',
-      lineNumber: 110,
+      lineNumber: 124,
     });
 
     return {
@@ -171,22 +174,24 @@ export class AuthService {
   }
 
   async getProfile(userId: string) {
-    const user = await this.authRepo.findUserWithAuthIdentities(userId);
+    return this.cacheService.getOrSet(`auth:profile:${userId}`, async () => {
+      const user = await this.authRepo.findUserWithAuthIdentities(userId);
 
-    if (!user) {
-      throw new AppException(AUTH_ERRORS.USER_NOT_FOUND);
-    }
+      if (!user) {
+        throw new AppException(AUTH_ERRORS.USER_NOT_FOUND);
+      }
 
-    const localIdentity = user.auth_identities[0];
+      const localIdentity = user.auth_identities[0];
 
-    return {
-      id: user.id,
-      full_name: user.full_name,
-      avatar_url: user.avatar_url,
-      email: localIdentity?.email ?? null,
-      email_verified: localIdentity?.verified_at !== null,
-      created_at: user.created_at,
-    };
+      return {
+        id: user.id,
+        full_name: user.full_name,
+        avatar_url: user.avatar_url,
+        email: localIdentity?.email ?? null,
+        email_verified: localIdentity?.verified_at !== null,
+        created_at: user.created_at,
+      };
+    }, CACHE_TTL.DETAIL);
   }
 
   private async generateTokenPair(userId: string, email: string): Promise<TokenPair> {

@@ -1,6 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import type { Cache } from 'cache-manager';
+import type { ICacheService } from '../../common/cache/cache.service.interface.js';
+import { CACHE_TTL } from '../../common/cache/cache.service.interface.js';
 import { LoggerService } from '../../common/logger/logger.service.js';
 import { AppException } from '../../common/errors/app.exception.js';
 import { AREA_ERRORS } from '../../common/errors/error-codes.js';
@@ -14,113 +14,64 @@ export class AreaService {
   constructor(
     @Inject('IAreaRepository') private readonly areaRepo: IAreaRepository,
     private readonly logger: LoggerService,
-    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
+    @Inject('ICacheService') private readonly cacheService: ICacheService,
   ) {}
 
   async findAll(query: AreaQueryDto) {
     const cacheKey = 'areas:list';
-    const cached = await this.cacheManager.get(cacheKey);
-    if (cached) {
-      this.logger.debug('Cache hit: areas:list', {
-        fileName: 'area.service.ts',
-        functionName: 'findAll',
-        lineNumber: 25,
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      const { city, parent_area_id, search, page = 1, limit = 20 } = query;
+      const skip = (page - 1) * limit;
+
+      const where: Record<string, any> = {};
+      if (city) where.city = city;
+      if (parent_area_id !== undefined) where.parent_area_id = parent_area_id;
+      if (search) where.name = { contains: search, mode: 'insensitive' };
+
+      const { items, total } = await this.areaRepo.findManyWithCount({
+        where,
+        skip,
+        take: limit,
+        orderBy: { name: 'asc' },
       });
-      return cached;
-    }
 
-    this.logger.debug('Cache miss: areas:list', {
-      fileName: 'area.service.ts',
-      functionName: 'findAll',
-      lineNumber: 32,
-    });
-
-    const { city, parent_area_id, search, page = 1, limit = 20 } = query;
-    const skip = (page - 1) * limit;
-
-    const where: Record<string, any> = {};
-    if (city) where.city = city;
-    if (parent_area_id !== undefined) where.parent_area_id = parent_area_id;
-    if (search) where.name = { contains: search, mode: 'insensitive' };
-
-    const { items, total } = await this.areaRepo.findManyWithCount({
-      where,
-      skip,
-      take: limit,
-      orderBy: { name: 'asc' },
-    });
-
-    const result = { items, total, page, limit, total_pages: Math.ceil(total / limit) };
-
-    await this.cacheManager.set(cacheKey, result, 300000);
-    return result;
+      return { items, total, page, limit, total_pages: Math.ceil(total / limit) };
+    }, CACHE_TTL.LIST);
   }
 
   async findOne(id: string) {
     const cacheKey = `areas:detail:${id}`;
-    const cached = await this.cacheManager.get(cacheKey);
-    if (cached) {
-      this.logger.debug(`Cache hit: areas:detail:${id}`, {
-        fileName: 'area.service.ts',
-        functionName: 'findOne',
-        lineNumber: 59,
-      });
-      return cached;
-    }
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      const area = await this.areaRepo.findDetail(id);
 
-    this.logger.debug(`Cache miss: areas:detail:${id}`, {
-      fileName: 'area.service.ts',
-      functionName: 'findOne',
-      lineNumber: 66,
-    });
+      if (!area) {
+        this.logger.warn(`Area not found: ${id}`, {
+          fileName: 'area.service.ts',
+          functionName: 'findOne',
+          lineNumber: 56,
+        });
+        throw new AppException(AREA_ERRORS.AREA_NOT_FOUND);
+      }
 
-    const area = await this.areaRepo.findDetail(id);
-
-    if (!area) {
-      this.logger.warn(`Area not found: ${id}`, {
-        fileName: 'area.service.ts',
-        functionName: 'findOne',
-        lineNumber: 73,
-      });
-      throw new AppException(AREA_ERRORS.AREA_NOT_FOUND);
-    }
-
-    await this.cacheManager.set(cacheKey, area, 600000);
-    return area;
+      return area;
+    }, CACHE_TTL.DETAIL);
   }
 
   async findChildren(id: string) {
     const cacheKey = `areas:children:${id}`;
-    const cached = await this.cacheManager.get(cacheKey);
-    if (cached) {
-      this.logger.debug(`Cache hit: areas:children:${id}`, {
-        fileName: 'area.service.ts',
-        functionName: 'findChildren',
-        lineNumber: 88,
-      });
-      return cached;
-    }
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      const parent = await this.areaRepo.findById(id);
+      if (!parent) {
+        this.logger.warn(`Area not found: ${id}`, {
+          fileName: 'area.service.ts',
+          functionName: 'findChildren',
+          lineNumber: 73,
+        });
+        throw new AppException(AREA_ERRORS.AREA_NOT_FOUND);
+      }
 
-    this.logger.debug(`Cache miss: areas:children:${id}`, {
-      fileName: 'area.service.ts',
-      functionName: 'findChildren',
-      lineNumber: 95,
-    });
-
-    const parent = await this.areaRepo.findById(id);
-    if (!parent) {
-      this.logger.warn(`Area not found: ${id}`, {
-        fileName: 'area.service.ts',
-        functionName: 'findChildren',
-        lineNumber: 100,
-      });
-      throw new AppException(AREA_ERRORS.AREA_NOT_FOUND);
-    }
-
-    const children = await this.areaRepo.findChildren(id);
-
-    await this.cacheManager.set(cacheKey, children, 300000);
-    return children;
+      return this.areaRepo.findChildren(id);
+    }, CACHE_TTL.LIST);
   }
 
   async create(dto: CreateAreaDto) {
@@ -131,7 +82,7 @@ export class AreaService {
       this.logger.warn(`Duplicate area creation attempted: ${dto.name}, ${city}`, {
         fileName: 'area.service.ts',
         functionName: 'create',
-        lineNumber: 122,
+        lineNumber: 89,
       });
       throw new AppException(AREA_ERRORS.AREA_ALREADY_EXISTS);
     }
@@ -144,12 +95,7 @@ export class AreaService {
 
     await this.areaRepo.updateGeometry(area.id, dto.boundary, dto.centroid);
 
-    await this.cacheManager.del('areas:list');
-    this.logger.debug('Cache invalidated: areas:list', {
-      fileName: 'area.service.ts',
-      functionName: 'create',
-      lineNumber: 139,
-    });
+    await this.cacheService.del('areas:list');
 
     return area;
   }
@@ -161,7 +107,7 @@ export class AreaService {
       this.logger.warn(`Area not found: ${id}`, {
         fileName: 'area.service.ts',
         functionName: 'update',
-        lineNumber: 150,
+        lineNumber: 112,
       });
       throw new AppException(AREA_ERRORS.AREA_NOT_FOUND);
     }
@@ -179,13 +125,12 @@ export class AreaService {
 
     await this.areaRepo.updateGeometry(id, dto.boundary, dto.centroid);
 
-    await this.cacheManager.del('areas:list');
-    await this.cacheManager.del(`areas:detail:${id}`);
+    await this.cacheService.delMany(['areas:list', `areas:detail:${id}`]);
 
     this.logger.info(`Area updated: ${id}`, {
       fileName: 'area.service.ts',
       functionName: 'update',
-      lineNumber: 175,
+      lineNumber: 134,
     });
 
     return { id };
@@ -198,7 +143,7 @@ export class AreaService {
       this.logger.warn(`Area not found: ${id}`, {
         fileName: 'area.service.ts',
         functionName: 'delete',
-        lineNumber: 186,
+        lineNumber: 146,
       });
       throw new AppException(AREA_ERRORS.AREA_NOT_FOUND);
     }
@@ -208,20 +153,19 @@ export class AreaService {
       this.logger.warn(`Delete blocked — area ${id} has active listings`, {
         fileName: 'area.service.ts',
         functionName: 'delete',
-        lineNumber: 194,
+        lineNumber: 154,
       });
       throw new AppException(AREA_ERRORS.AREA_HAS_ACTIVE_LISTINGS);
     }
 
     await this.areaRepo.delete(id);
 
-    await this.cacheManager.del('areas:list');
-    await this.cacheManager.del(`areas:detail:${id}`);
+    await this.cacheService.delMany(['areas:list', `areas:detail:${id}`]);
 
     this.logger.info(`Area deleted: ${id}`, {
       fileName: 'area.service.ts',
       functionName: 'delete',
-      lineNumber: 209,
+      lineNumber: 167,
     });
 
     return { message: 'Area deleted successfully' };

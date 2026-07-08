@@ -141,11 +141,7 @@ export class PrismaPropertyRepository implements IPropertyRepository {
     };
   }
 
-  async findWithProximitySearch(
-    query: PropertyQueryParams,
-    cacheKey: string,
-    cacheManager: any,
-  ): Promise<PaginatedResult<PropertyListItem>> {
+  async findWithProximitySearch(query: PropertyQueryParams): Promise<PaginatedResult<PropertyListItem>> {
     const radiusKm = query.radius!;
     const lat = query.lat!;
     const lng = query.lng!;
@@ -188,16 +184,13 @@ export class PrismaPropertyRepository implements IPropertyRepository {
     const skip = (query.page - 1) * query.limit;
     const paginated = filtered.slice(skip, skip + query.limit);
 
-    const result = {
+    return {
       items: paginated,
       total: filtered.length,
       page: Math.floor(skip / query.limit) + 1,
       limit: query.limit,
       total_pages: Math.ceil(filtered.length / query.limit),
     };
-
-    await cacheManager.set(cacheKey, result, 300);
-    return result;
   }
 
   async findPublishedById(id: string): Promise<PropertyDetail | null> {
