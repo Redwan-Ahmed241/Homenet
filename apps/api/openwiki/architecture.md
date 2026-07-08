@@ -11,6 +11,9 @@ The **Homenet API** is built with **NestJS** (v11) following the framework's mod
 | **RoleModule** | Role‑based access control (RBAC) with permissions. | `src/modules/role/*` |
 | **PrismaModule** | Prisma ORM integration, provides `PrismaService` for DB access. | `src/config/prisma/*` |
 | **LoggerModule** | Centralised Winston logger used across the app. | `src/common/logger/*` |
+| **CacheServiceModule** | Centralised caching service. | `src/common/cache/*` |
+| **AreaModule** | Manages area entities and related business logic. | `src/modules/area/*` |
+| **PropertyModule** | Handles property CRUD, media, and queries. | `src/modules/property/*` |
 | **Global Guards** | JWT auth, permissions, and rate‑limiting are registered as `APP_GUARD`s. | `src/app.module.ts` (providers) |
 
 ## Global Providers (app.module.ts)
@@ -24,6 +27,8 @@ The **Homenet API** is built with **NestJS** (v11) following the framework's mod
     AuthModule,
     UserModule,
     RoleModule,
+    AreaModule,
+    PropertyModule,
   ],
   controllers: [AppController],
   providers: [
