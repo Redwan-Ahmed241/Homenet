@@ -1,24 +1,21 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import type { Cache } from 'cache-manager';
-import { PrismaService } from '../../config/prisma/prisma.service.js';
 import { LoggerService } from '../../common/logger/logger.service.js';
 import { AppException } from '../../common/errors/app.exception.js';
 import { AREA_ERRORS } from '../../common/errors/error-codes.js';
 import { CreateAreaDto } from './dto/create-area.dto.js';
 import { UpdateAreaDto } from './dto/update-area.dto.js';
 import { AreaQueryDto } from './dto/area-query.dto.js';
-import { Prisma } from '@prisma/client';
+import type { IAreaRepository } from './interfaces/area-repository.interface.js';
 
 @Injectable()
 export class AreaService {
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject('IAreaRepository') private readonly areaRepo: IAreaRepository,
     private readonly logger: LoggerService,
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
   ) {}
-
-  // ── List / Query ────────────────────────────────────────
 
   async findAll(query: AreaQueryDto) {
     const cacheKey = 'areas:list';
@@ -27,7 +24,7 @@ export class AreaService {
       this.logger.debug('Cache hit: areas:list', {
         fileName: 'area.service.ts',
         functionName: 'findAll',
-        lineNumber: 28,
+        lineNumber: 25,
       });
       return cached;
     }
@@ -35,58 +32,29 @@ export class AreaService {
     this.logger.debug('Cache miss: areas:list', {
       fileName: 'area.service.ts',
       functionName: 'findAll',
-      lineNumber: 35,
+      lineNumber: 32,
     });
 
     const { city, parent_area_id, search, page = 1, limit = 20 } = query;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.AreaWhereInput = {};
+    const where: Record<string, any> = {};
+    if (city) where.city = city;
+    if (parent_area_id !== undefined) where.parent_area_id = parent_area_id;
+    if (search) where.name = { contains: search, mode: 'insensitive' };
 
-    if (city) {
-      where.city = city;
-    }
+    const { items, total } = await this.areaRepo.findManyWithCount({
+      where,
+      skip,
+      take: limit,
+      orderBy: { name: 'asc' },
+    });
 
-    if (parent_area_id !== undefined) {
-      where.parent_area_id = parent_area_id;
-    }
-
-    if (search) {
-      where.name = { contains: search, mode: 'insensitive' };
-    }
-
-    const [items, total] = await Promise.all([
-      this.prisma.area.findMany({
-        where,
-        select: {
-          id: true,
-          name: true,
-          parent_area_id: true,
-          city: true,
-          created_at: true,
-          updated_at: true,
-          _count: { select: { children: true } },
-        },
-        skip,
-        take: limit,
-        orderBy: { name: 'asc' },
-      }),
-      this.prisma.area.count({ where }),
-    ]);
-
-    const result = {
-      items,
-      total,
-      page,
-      limit,
-      total_pages: Math.ceil(total / limit),
-    };
+    const result = { items, total, page, limit, total_pages: Math.ceil(total / limit) };
 
     await this.cacheManager.set(cacheKey, result, 300000);
     return result;
   }
-
-  // ── Get by ID ──────────────────────────────────────────
 
   async findOne(id: string) {
     const cacheKey = `areas:detail:${id}`;
@@ -95,7 +63,7 @@ export class AreaService {
       this.logger.debug(`Cache hit: areas:detail:${id}`, {
         fileName: 'area.service.ts',
         functionName: 'findOne',
-        lineNumber: 79,
+        lineNumber: 59,
       });
       return cached;
     }
@@ -103,28 +71,16 @@ export class AreaService {
     this.logger.debug(`Cache miss: areas:detail:${id}`, {
       fileName: 'area.service.ts',
       functionName: 'findOne',
-      lineNumber: 86,
+      lineNumber: 66,
     });
 
-    const area = await this.prisma.area.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        name: true,
-        parent_area_id: true,
-        city: true,
-        created_at: true,
-        updated_at: true,
-        parent: { select: { id: true, name: true } },
-        children: { select: { id: true, name: true } },
-      },
-    });
+    const area = await this.areaRepo.findDetail(id);
 
     if (!area) {
       this.logger.warn(`Area not found: ${id}`, {
         fileName: 'area.service.ts',
         functionName: 'findOne',
-        lineNumber: 101,
+        lineNumber: 73,
       });
       throw new AppException(AREA_ERRORS.AREA_NOT_FOUND);
     }
@@ -133,8 +89,6 @@ export class AreaService {
     return area;
   }
 
-  // ── Get Children ───────────────────────────────────────
-
   async findChildren(id: string) {
     const cacheKey = `areas:children:${id}`;
     const cached = await this.cacheManager.get(cacheKey);
@@ -142,7 +96,7 @@ export class AreaService {
       this.logger.debug(`Cache hit: areas:children:${id}`, {
         fileName: 'area.service.ts',
         functionName: 'findChildren',
-        lineNumber: 118,
+        lineNumber: 88,
       });
       return cached;
     }
@@ -150,115 +104,69 @@ export class AreaService {
     this.logger.debug(`Cache miss: areas:children:${id}`, {
       fileName: 'area.service.ts',
       functionName: 'findChildren',
-      lineNumber: 125,
+      lineNumber: 95,
     });
 
-    const parent = await this.prisma.area.findUnique({
-      where: { id },
-      select: { id: true },
-    });
-
+    const parent = await this.areaRepo.findById(id);
     if (!parent) {
       this.logger.warn(`Area not found: ${id}`, {
         fileName: 'area.service.ts',
         functionName: 'findChildren',
-        lineNumber: 133,
+        lineNumber: 100,
       });
       throw new AppException(AREA_ERRORS.AREA_NOT_FOUND);
     }
 
-    const children = await this.prisma.area.findMany({
-      where: { parent_area_id: id },
-      select: {
-        id: true,
-        name: true,
-        parent_area_id: true,
-        city: true,
-        created_at: true,
-        updated_at: true,
-        _count: { select: { children: true } },
-      },
-      orderBy: { name: 'asc' },
-    });
+    const children = await this.areaRepo.findChildren(id);
 
     await this.cacheManager.set(cacheKey, children, 300000);
     return children;
   }
 
-  // ── Create ─────────────────────────────────────────────
-
   async create(dto: CreateAreaDto) {
     const city = dto.city ?? 'Dhaka';
 
-    // Check for duplicate
-    const existing = await this.prisma.area.findFirst({
-      where: { name: dto.name, city },
-    });
-
+    const existing = await this.areaRepo.findByNameAndCity(dto.name, city);
     if (existing) {
       this.logger.warn(`Duplicate area creation attempted: ${dto.name}, ${city}`, {
         fileName: 'area.service.ts',
         functionName: 'create',
-        lineNumber: 161,
+        lineNumber: 122,
       });
       throw new AppException(AREA_ERRORS.AREA_ALREADY_EXISTS);
     }
 
-    // Create area record
-    const area = await this.prisma.area.create({
-      data: {
-        name: dto.name,
-        parent_area_id: dto.parent_area_id ?? null,
-        city,
-      },
+    const area = await this.areaRepo.create({
+      name: dto.name,
+      parent_area_id: dto.parent_area_id ?? null,
+      city,
     });
 
-    // Store PostGIS geometry fields via raw queries if provided
-    if (dto.boundary) {
-      await this.prisma.$executeRawUnsafe(
-        `UPDATE "Area" SET boundary = ST_SetSRID(ST_GeomFromText('${dto.boundary}'), 4326) WHERE id = '${area.id}'`,
-      );
-    }
+    await this.areaRepo.updateGeometry(area.id, dto.boundary, dto.centroid);
 
-    if (dto.centroid) {
-      await this.prisma.$executeRawUnsafe(
-        `UPDATE "Area" SET centroid = ST_SetSRID(ST_GeomFromText('${dto.centroid}'), 4326) WHERE id = '${area.id}'`,
-      );
-    }
-
-    // Invalidate list cache
     await this.cacheManager.del('areas:list');
     this.logger.debug('Cache invalidated: areas:list', {
       fileName: 'area.service.ts',
       functionName: 'create',
-      lineNumber: 193,
-    });
-
-    this.logger.info(`Area created: ${area.id} - ${area.name}`, {
-      fileName: 'area.service.ts',
-      functionName: 'create',
-      lineNumber: 198,
+      lineNumber: 139,
     });
 
     return area;
   }
 
-  // ── Update ─────────────────────────────────────────────
-
   async update(id: string, dto: UpdateAreaDto) {
-    const area = await this.prisma.area.findUnique({ where: { id } });
+    const area = await this.areaRepo.findById(id);
 
     if (!area) {
       this.logger.warn(`Area not found: ${id}`, {
         fileName: 'area.service.ts',
         functionName: 'update',
-        lineNumber: 210,
+        lineNumber: 150,
       });
       throw new AppException(AREA_ERRORS.AREA_NOT_FOUND);
     }
 
-    const updateData: Prisma.AreaUpdateInput = {};
-
+    const updateData: Record<string, any> = {};
     if (dto.name !== undefined) updateData.name = dto.name;
     if (dto.parent_area_id !== undefined) {
       updateData.parent = dto.parent_area_id
@@ -267,103 +175,53 @@ export class AreaService {
     }
     if (dto.city !== undefined) updateData.city = dto.city;
 
-    const updated = await this.prisma.area.update({
-      where: { id },
-      data: updateData,
-    });
+    await this.areaRepo.update(id, updateData);
 
-    // Update PostGIS fields via raw queries
-    if (dto.boundary !== undefined) {
-      if (dto.boundary) {
-        await this.prisma.$executeRawUnsafe(
-          `UPDATE "Area" SET boundary = ST_SetSRID(ST_GeomFromText('${dto.boundary}'), 4326) WHERE id = '${id}'`,
-        );
-      } else {
-        await this.prisma.$executeRawUnsafe(
-          `UPDATE "Area" SET boundary = NULL WHERE id = '${id}'`,
-        );
-      }
-    }
+    await this.areaRepo.updateGeometry(id, dto.boundary, dto.centroid);
 
-    if (dto.centroid !== undefined) {
-      if (dto.centroid) {
-        await this.prisma.$executeRawUnsafe(
-          `UPDATE "Area" SET centroid = ST_SetSRID(ST_GeomFromText('${dto.centroid}'), 4326) WHERE id = '${id}'`,
-        );
-      } else {
-        await this.prisma.$executeRawUnsafe(
-          `UPDATE "Area" SET centroid = NULL WHERE id = '${id}'`,
-        );
-      }
-    }
-
-    // Invalidate cache
     await this.cacheManager.del('areas:list');
     await this.cacheManager.del(`areas:detail:${id}`);
-    if (area.parent_area_id) {
-      await this.cacheManager.del(`areas:children:${area.parent_area_id}`);
-    }
-    this.logger.debug('Cache invalidated: areas:list', {
-      fileName: 'area.service.ts',
-      functionName: 'update',
-      lineNumber: 262,
-    });
 
     this.logger.info(`Area updated: ${id}`, {
       fileName: 'area.service.ts',
       functionName: 'update',
-      lineNumber: 267,
+      lineNumber: 175,
     });
 
-    return updated;
+    return { id };
   }
 
-  // ── Delete ─────────────────────────────────────────────
-
   async delete(id: string) {
-    const area = await this.prisma.area.findUnique({ where: { id } });
+    const area = await this.areaRepo.findById(id);
 
     if (!area) {
       this.logger.warn(`Area not found: ${id}`, {
         fileName: 'area.service.ts',
         functionName: 'delete',
-        lineNumber: 279,
+        lineNumber: 186,
       });
       throw new AppException(AREA_ERRORS.AREA_NOT_FOUND);
     }
 
-    // Check for active property listings
-    const propertyCount = await this.prisma.property.count({
-      where: { area_id: id, status: 'active' },
-    });
-
+    const propertyCount = await this.areaRepo.countActiveProperties(id);
     if (propertyCount > 0) {
       this.logger.warn(`Delete blocked — area ${id} has active listings`, {
         fileName: 'area.service.ts',
         functionName: 'delete',
-        lineNumber: 290,
+        lineNumber: 194,
       });
       throw new AppException(AREA_ERRORS.AREA_HAS_ACTIVE_LISTINGS);
     }
 
-    await this.prisma.area.delete({ where: { id } });
+    await this.areaRepo.delete(id);
 
-    // Invalidate cache
     await this.cacheManager.del('areas:list');
     await this.cacheManager.del(`areas:detail:${id}`);
-    if (area.parent_area_id) {
-      await this.cacheManager.del(`areas:children:${area.parent_area_id}`);
-    }
-    this.logger.debug('Cache invalidated: areas:list', {
-      fileName: 'area.service.ts',
-      functionName: 'delete',
-      lineNumber: 305,
-    });
 
     this.logger.info(`Area deleted: ${id}`, {
       fileName: 'area.service.ts',
       functionName: 'delete',
-      lineNumber: 310,
+      lineNumber: 209,
     });
 
     return { message: 'Area deleted successfully' };

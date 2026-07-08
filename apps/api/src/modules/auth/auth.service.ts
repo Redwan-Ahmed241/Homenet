@@ -1,8 +1,6 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { Prisma } from '@prisma/client';
-import { PrismaService } from '../../config/prisma/prisma.service.js';
 import { validatePassword } from '../../common/utils/password.util.js';
 import { RegisterDto } from './dto/register.dto.js';
 import { AppException } from '../../common/errors/app.exception.js';
@@ -10,6 +8,7 @@ import { AUTH_ERRORS } from '../../common/errors/error-codes.js';
 import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { LoggerService } from '../../common/logger/logger.service.js';
+import type { IAuthRepository } from './interfaces/auth-repository.interface.js';
 
 interface JwtPayload {
   sub: string;
@@ -36,67 +35,38 @@ export class AuthService {
   private readonly REFRESH_TOKEN_EXPIRY_DAYS = 7;
 
   constructor(
-    private readonly prisma: PrismaService,
+    @Inject('IAuthRepository') private readonly authRepo: IAuthRepository,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
     private readonly logger: LoggerService,
   ) {}
 
-  // ── Register ─────────────────────────────────────────────
-
   async register(dto: RegisterDto): Promise<AuthResponse> {
-    // 1. Validate password strength
     const validation = validatePassword(dto.password);
     if (!validation.isValid) {
       throw new AppException(AUTH_ERRORS.PASSWORD_TOO_WEAK, validation.errors.join('; '));
     }
 
-    // 2. Check if email is already registered under LOCAL provider
-    const existingIdentity = await this.prisma.authIdentity.findFirst({
-      where: {
-        provider: 'LOCAL',
-        email: dto.email.toLowerCase(),
-      },
-    });
-
+    const existingIdentity = await this.authRepo.findIdentityByProvider('LOCAL', dto.email.toLowerCase());
     if (existingIdentity) {
       throw new AppException(AUTH_ERRORS.EMAIL_ALREADY_EXISTS);
     }
 
-    // 3. Hash password
     const passwordHash = await bcrypt.hash(dto.password, this.BCRYPT_ROUNDS);
 
-    // 4. Create User + AuthIdentity in a transaction
-    const user = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const newUser = await tx.user.create({
-        data: {
-          full_name: dto.full_name,
-          avatar_url: dto.avatar_url ?? null,
-        },
-      });
+    const user = await this.authRepo.createUserWithIdentity(
+      { full_name: dto.full_name, avatar_url: dto.avatar_url },
+      { provider: 'LOCAL', email: dto.email.toLowerCase(), password_hash: passwordHash },
+    );
 
-      await tx.authIdentity.create({
-        data: {
-          user_id: newUser.id,
-          provider: 'LOCAL',
-          email: dto.email.toLowerCase(),
-          password_hash: passwordHash,
-        },
-      });
-
-      return newUser;
-    });
-
-    // 5. Generate tokens
     const tokens = await this.generateTokenPair(user.id, dto.email.toLowerCase());
 
-    // 6. Store refresh token hash
     await this.storeRefreshToken(user.id, tokens.refresh_token);
 
     this.logger.info(`New user registered: ${dto.email}`, {
       fileName: 'auth.service.ts',
       functionName: 'register',
-      lineNumber: 102,
+      lineNumber: 63,
     });
 
     return {
@@ -110,22 +80,14 @@ export class AuthService {
     };
   }
 
-  // ── Validate Local User (called by LocalStrategy) ───────
-
   async validateLocalUser(email: string, password: string) {
-    const identity = await this.prisma.authIdentity.findFirst({
-      where: {
-        provider: 'LOCAL',
-        email: email.toLowerCase(),
-      },
-      include: { user: true },
-    });
+    const identity = await this.authRepo.findIdentityWithUser('LOCAL', email.toLowerCase());
 
     if (!identity || !identity.password_hash) {
       this.logger.warn(`Failed login attempt for email: ${email}`, {
         fileName: 'auth.service.ts',
         functionName: 'validateLocalUser',
-        lineNumber: 122,
+        lineNumber: 80,
       });
       throw new AppException(AUTH_ERRORS.INVALID_CREDENTIALS);
     }
@@ -136,7 +98,7 @@ export class AuthService {
       this.logger.warn(`Failed login attempt (bad password) for email: ${email}`, {
         fileName: 'auth.service.ts',
         functionName: 'validateLocalUser',
-        lineNumber: 130,
+        lineNumber: 88,
       });
       throw new AppException(AUTH_ERRORS.INVALID_CREDENTIALS);
     }
@@ -149,8 +111,6 @@ export class AuthService {
     };
   }
 
-  // ── Login (called after LocalStrategy validates) ────────
-
   async login(user: { id: string; email: string; full_name: string; avatar_url: string | null }): Promise<AuthResponse> {
     const tokens = await this.generateTokenPair(user.id, user.email);
 
@@ -159,7 +119,7 @@ export class AuthService {
     this.logger.info('User logged in successfully', {
       fileName: 'auth.service.ts',
       functionName: 'login',
-      lineNumber: 145, // Approximation, as strict line tracking is requested
+      lineNumber: 110,
     });
 
     return {
@@ -173,38 +133,17 @@ export class AuthService {
     };
   }
 
-  // ── Refresh Tokens (rotation) ───────────────────────────
-
   async refreshTokens(oldRefreshToken: string): Promise<TokenPair> {
     const tokenHash = this.hashToken(oldRefreshToken);
 
-    const storedToken = await this.prisma.refreshToken.findFirst({
-      where: {
-        token_hash: tokenHash,
-        revoked_at: null,
-      },
-      include: {
-        user: {
-          include: {
-            auth_identities: {
-              where: { provider: 'LOCAL' },
-              take: 1,
-            },
-          },
-        },
-      },
-    });
+    const storedToken = await this.authRepo.findRefreshTokenWithUser(tokenHash);
 
     if (!storedToken) {
       throw new AppException(AUTH_ERRORS.INVALID_REFRESH_TOKEN);
     }
 
     if (storedToken.expires_at < new Date()) {
-      // Revoke expired token
-      await this.prisma.refreshToken.update({
-        where: { id: storedToken.id },
-        data: { revoked_at: new Date() },
-      });
+      await this.authRepo.revokeRefreshToken(storedToken.id);
       throw new AppException(AUTH_ERRORS.REFRESH_TOKEN_EXPIRED);
     }
 
@@ -214,60 +153,25 @@ export class AuthService {
       throw new AppException(AUTH_ERRORS.USER_IDENTITY_NOT_FOUND);
     }
 
-    // Rotate: revoke old, issue new
     const newTokens = await this.generateTokenPair(storedToken.user_id, email);
 
-    await this.prisma.$transaction([
-      // Revoke old token
-      this.prisma.refreshToken.update({
-        where: { id: storedToken.id },
-        data: { revoked_at: new Date() },
-      }),
-      // Store new refresh token
-      this.prisma.refreshToken.create({
-        data: {
-          user_id: storedToken.user_id,
-          token_hash: this.hashToken(newTokens.refresh_token),
-          expires_at: this.getRefreshTokenExpiry(),
-        },
-      }),
-    ]);
+    await this.authRepo.rotateRefreshToken(storedToken.id, {
+      user_id: storedToken.user_id,
+      token_hash: this.hashToken(newTokens.refresh_token),
+      expires_at: this.getRefreshTokenExpiry(),
+    });
 
     return newTokens;
   }
 
-  // ── Logout ──────────────────────────────────────────────
-
   async logout(userId: string, refreshToken: string): Promise<void> {
     const tokenHash = this.hashToken(refreshToken);
 
-    await this.prisma.refreshToken.updateMany({
-      where: {
-        user_id: userId,
-        token_hash: tokenHash,
-        revoked_at: null,
-      },
-      data: { revoked_at: new Date() },
-    });
-
-    this.logger.info(`User ${userId} logged out successfully`, {
-      fileName: 'auth.service.ts',
-      functionName: 'logout',
-      lineNumber: 242,
-    });
+    await this.authRepo.revokeRefreshTokensByUserAndHash(userId, tokenHash);
   }
 
-  // ── Get Current User Profile ────────────────────────────
-
   async getProfile(userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      include: {
-        auth_identities: {
-          where: { provider: 'LOCAL' },
-        },
-      },
-    });
+    const user = await this.authRepo.findUserWithAuthIdentities(userId);
 
     if (!user) {
       throw new AppException(AUTH_ERRORS.USER_NOT_FOUND);
@@ -285,8 +189,6 @@ export class AuthService {
     };
   }
 
-  // ── Private Helpers ─────────────────────────────────────
-
   private async generateTokenPair(userId: string, email: string): Promise<TokenPair> {
     const payload: JwtPayload = { sub: userId, email };
 
@@ -301,21 +203,13 @@ export class AuthService {
   }
 
   private async storeRefreshToken(userId: string, rawToken: string): Promise<void> {
-    await this.prisma.refreshToken.create({
-      data: {
-        user_id: userId,
-        token_hash: this.hashToken(rawToken),
-        expires_at: this.getRefreshTokenExpiry(),
-      },
-    });
+    await this.authRepo.createRefreshToken(
+      userId,
+      this.hashToken(rawToken),
+      this.getRefreshTokenExpiry(),
+    );
   }
 
-  /**
-   * Hash refresh tokens with SHA-256 for DB storage.
-   * Using SHA-256 instead of bcrypt here because:
-   * - Refresh tokens are high-entropy random UUIDs (not user-chosen passwords)
-   * - We need fast lookups by hash (bcrypt is intentionally slow)
-   */
   private hashToken(token: string): string {
     return crypto.createHash('sha256').update(token).digest('hex');
   }
