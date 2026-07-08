@@ -1,0 +1,77 @@
+$kind: http-example
+request:
+  url: http://localhost:3000/properties
+  method: POST
+  headers:
+    Content-Type: application/json
+    Authorization: Bearer <access_token>
+  body:
+    type: json
+    content: |-
+      {
+        "area_id": "uuid-of-area",
+        "title": "Modern 3BR Apartment in Banani",
+        "description": "A beautiful apartment in the heart of Banani.",
+        "type": "residential",
+        "subtype": "apartment",
+        "listing_type": "rent",
+        "price": 85000,
+        "price_currency": "BDT",
+        "area_size": 1650,
+        "area_unit": "sqft",
+        "location_lat": 23.793,
+        "location_lng": 90.405,
+        "address": "Road 11, Banani, Dhaka",
+        "amenities": {
+          "bedrooms": 3,
+          "bathrooms": 3,
+          "flooring": "tiles",
+          "water_supply": "yes",
+          "gas_connection": "yes",
+          "electricity": "yes"
+        },
+        "virtual_tour_url": "https://tour.example.com/property-123"
+      }
+response:
+  statusCode: 201
+  statusText: OK
+  body:
+    type: text
+    content: |-
+      {
+        "success": true,
+        "message": "OK",
+        "data": {
+          "id": "uuid-of-new-property",
+          "user_id": "uuid-of-user",
+          "area_id": "uuid-of-area",
+          "title": "Modern 3BR Apartment in Banani",
+          "description": "A beautiful apartment in the heart of Banani.",
+          "type": "residential",
+          "subtype": "apartment",
+          "listing_type": "rent",
+          "price": 85000,
+          "price_currency": "BDT",
+          "area_size": 1650,
+          "area_unit": "sqft",
+          "location_lat": 23.793,
+          "location_lng": 90.405,
+          "address": "Road 11, Banani, Dhaka",
+          "amenities": {
+            "bedrooms": 3,
+            "bathrooms": 3,
+            "flooring": "tiles",
+            "water_supply": "yes",
+            "gas_connection": "yes",
+            "electricity": "yes"
+          },
+          "status": "draft",
+          "is_verified": false,
+          "virtual_tour_url": "https://tour.example.com/property-123",
+          "view_count": 0,
+          "published_at": null,
+          "created_at": "2026-07-07T10:00:00.000Z",
+          "updated_at": "2026-07-07T10:00:00.000Z"
+        }
+      }
+order: 1000

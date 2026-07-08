@@ -1,0 +1,31 @@
+$kind: http-example
+request:
+  url: http://localhost:3000/roles/{{roleId}}/permissions
+  method: POST
+  headers:
+    Content-Type: application/json
+    Authorization: Bearer <access_token>
+  pathVariables:
+    roleId: uuid-of-role
+  body:
+    type: json
+    content: |-
+      {
+        "permissionId": "uuid-of-permission"
+      }
+response:
+  statusCode: 201
+  statusText: OK
+  body:
+    type: text
+    content: |-
+      {
+        "success": true,
+        "message": "OK",
+        "data": {
+          "id": "uuid-of-role-permission",
+          "role_id": "uuid-of-role",
+          "permission_id": "uuid-of-permission"
+        }
+      }
+order: 1000

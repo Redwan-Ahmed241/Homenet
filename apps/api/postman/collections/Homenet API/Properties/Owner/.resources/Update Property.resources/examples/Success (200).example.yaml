@@ -1,0 +1,55 @@
+$kind: http-example
+request:
+  url: http://localhost:3000/properties/{{propertyId}}
+  method: PATCH
+  headers:
+    Content-Type: application/json
+    Authorization: Bearer <access_token>
+  pathVariables:
+    propertyId: uuid-of-property
+  body:
+    type: json
+    content: |-
+      {
+        "title": "Updated Title - Now With Better Description",
+        "price": 95000
+      }
+response:
+  statusCode: 200
+  statusText: OK
+  body:
+    type: text
+    content: |-
+      {
+        "success": true,
+        "message": "OK",
+        "data": {
+          "id": "uuid-of-property",
+          "user_id": "uuid-of-user",
+          "area_id": "uuid-of-area",
+          "title": "Updated Title - Now With Better Description",
+          "description": "A beautiful apartment in the heart of Banani.",
+          "type": "residential",
+          "subtype": "apartment",
+          "listing_type": "rent",
+          "price": 95000,
+          "price_currency": "BDT",
+          "area_size": 1650,
+          "area_unit": "sqft",
+          "location_lat": 23.793,
+          "location_lng": 90.405,
+          "address": "Road 11, Banani, Dhaka",
+          "amenities": {
+            "bedrooms": 3,
+            "bathrooms": 3
+          },
+          "status": "draft",
+          "is_verified": false,
+          "virtual_tour_url": null,
+          "view_count": 0,
+          "published_at": null,
+          "created_at": "2026-07-07T10:00:00.000Z",
+          "updated_at": "2026-07-07T11:00:00.000Z"
+        }
+      }
+order: 1000

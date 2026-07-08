@@ -1,0 +1,3 @@
+$kind: collection
+description: Authenticated user endpoints for managing own properties. JWT required.
+order: 2000

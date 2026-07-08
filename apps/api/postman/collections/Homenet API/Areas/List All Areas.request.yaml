@@ -1,0 +1,26 @@
+$kind: http-request
+description: Returns a paginated list of areas with optional filters. No
+  authentication required.
+url: http://localhost:3000/areas?page=1&limit=20
+method: GET
+queryParams:
+  - key: page
+    value: "1"
+    description: "Page number (default: 1)"
+  - key: limit
+    value: "20"
+    description: "Items per page (default: 20, max: 100)"
+  - key: city
+    value: ""
+    disabled: true
+    description: Filter by city name
+  - key: parent_area_id
+    value: ""
+    disabled: true
+    description: Filter by parent area UUID
+  - key: search
+    value: ""
+    disabled: true
+    description: Case-insensitive name search
+examples: ./.resources/List All Areas.resources/examples
+order: 1000

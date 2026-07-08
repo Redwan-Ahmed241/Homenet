@@ -1,0 +1,40 @@
+$kind: http-example
+request:
+  url: http://localhost:3000/properties/{{propertyId}}/media
+  method: POST
+  headers:
+    Content-Type: application/json
+    Authorization: Bearer <access_token>
+  pathVariables:
+    propertyId: uuid-of-property
+  body:
+    type: json
+    content: |-
+      {
+        "property_id": "uuid-of-property",
+        "media_type": "image",
+        "url": "https://example.com/property-photo.jpg",
+        "thumbnail_url": "https://example.com/property-thumb.jpg",
+        "display_order": 5
+      }
+response:
+  statusCode: 201
+  statusText: OK
+  body:
+    type: text
+    content: |-
+      {
+        "success": true,
+        "message": "OK",
+        "data": {
+          "id": "uuid-of-new-media",
+          "property_id": "uuid-of-property",
+          "media_type": "image",
+          "url": "https://example.com/property-photo.jpg",
+          "thumbnail_url": "https://example.com/property-thumb.jpg",
+          "display_order": 5,
+          "analysis": null,
+          "created_at": "2026-07-07T10:00:00.000Z"
+        }
+      }
+order: 1000

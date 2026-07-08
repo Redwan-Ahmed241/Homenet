@@ -1,0 +1,5 @@
+$kind: collection
+description: Property listings management. Public read endpoints require no
+  auth. Owner operations require JWT. Admin operations require manage_properties
+  permission.
+order: 6000

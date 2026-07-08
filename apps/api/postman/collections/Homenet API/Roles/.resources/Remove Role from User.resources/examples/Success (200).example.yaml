@@ -1,0 +1,28 @@
+$kind: http-example
+request:
+  url: http://localhost:3000/roles/revoke
+  method: DELETE
+  headers:
+    Content-Type: application/json
+    Authorization: Bearer <access_token>
+  body:
+    type: json
+    content: |-
+      {
+        "userId": "uuid-of-user",
+        "roleId": "uuid-of-role"
+      }
+response:
+  statusCode: 200
+  statusText: OK
+  body:
+    type: text
+    content: |-
+      {
+        "success": true,
+        "message": "OK",
+        "data": {
+          "count": 1
+        }
+      }
+order: 1000

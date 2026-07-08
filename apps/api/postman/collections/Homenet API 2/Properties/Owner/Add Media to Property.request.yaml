@@ -1,0 +1,20 @@
+$kind: http-request
+description: Adds a media item (image/video) to the authenticated user's
+  property. JWT required.
+url: http://localhost:3000/properties/{{propertyId}}/media
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer <access_token>
+body:
+  type: json
+  content: |-
+    {
+      "property_id": "uuid-of-property",
+      "media_type": "image",
+      "url": "https://example.com/property-photo.jpg",
+      "thumbnail_url": "https://example.com/property-thumb.jpg",
+      "display_order": 5
+    }
+examples: ./.resources/Add Media to Property.resources/examples
+order: 4000

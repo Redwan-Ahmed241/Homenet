@@ -1,0 +1,11 @@
+$kind: http-request
+description: Detaches a permission from a role. Requires manage_roles permission.
+url: http://localhost:3000/roles/{{roleId}}/permissions/{{permissionId}}
+method: DELETE
+headers:
+  Authorization: Bearer <access_token>
+pathVariables:
+  roleId: uuid-of-role
+  permissionId: uuid-of-permission
+examples: ./.resources/Remove Permission from Role.resources/examples
+order: 7000

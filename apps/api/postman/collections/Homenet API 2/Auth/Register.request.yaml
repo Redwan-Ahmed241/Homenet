@@ -1,0 +1,16 @@
+$kind: http-request
+description: "Creates a new user account with email/password. Optional field: avatar_url."
+url: http://localhost:3000/auth/register
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "full_name": "John Doe",
+      "email": "john@example.com",
+      "password": "StrongP@ss123"
+    }
+examples: ./.resources/Register.resources/examples
+order: 1000

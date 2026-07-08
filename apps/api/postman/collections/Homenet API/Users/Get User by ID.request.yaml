@@ -1,0 +1,10 @@
+$kind: http-request
+description: Returns a single user's details by ID. JWT required.
+url: http://localhost:3000/users/{{userId}}
+method: GET
+headers:
+  Authorization: Bearer <access_token>
+pathVariables:
+  userId: uuid-of-user
+examples: ./.resources/Get User by ID.resources/examples
+order: 2000

@@ -1,0 +1,8 @@
+$kind: http-request
+description: Returns a single role with its permissions. Requires view_roles permission.
+url: http://localhost:3000/roles/{{roleId}}
+method: GET
+headers:
+  Authorization: Bearer <access_token>
+examples: ./.resources/Get Role by ID.resources/examples
+order: 2000

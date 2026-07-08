@@ -1,0 +1,26 @@
+$kind: http-example
+request:
+  url: http://localhost:3000/properties/{{propertyId}}
+  method: DELETE
+  headers:
+    Authorization: Bearer <access_token>
+  pathVariables:
+    propertyId: uuid-of-property
+response:
+  statusCode: 200
+  statusText: OK
+  body:
+    type: text
+    content: |-
+      {
+        "success": true,
+        "message": "OK",
+        "data": {
+          "id": "uuid-of-property",
+          "user_id": "uuid-of-user",
+          "area_id": "uuid-of-area",
+          "title": "Modern 3BR Apartment in Banani",
+          "status": "archived"
+        }
+      }
+order: 1000

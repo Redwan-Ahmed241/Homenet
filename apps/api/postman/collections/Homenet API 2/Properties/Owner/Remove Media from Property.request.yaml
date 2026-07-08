@@ -1,0 +1,8 @@
+$kind: http-request
+description: Removes a media item from the authenticated user's property. JWT required.
+url: http://localhost:3000/properties/media/{{mediaId}}
+method: DELETE
+headers:
+  Authorization: Bearer <access_token>
+examples: ./.resources/Remove Media from Property.resources/examples
+order: 5000

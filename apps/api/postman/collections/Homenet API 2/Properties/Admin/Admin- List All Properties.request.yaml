@@ -1,0 +1,10 @@
+$kind: http-request
+name: "Admin: List All Properties"
+description: Returns all properties across all statuses with admin-level
+  details. Requires manage_properties permission.
+url: http://localhost:3000/properties/admin
+method: GET
+headers:
+  Authorization: Bearer <access_token>
+examples: ./.resources/Admin- List All Properties.resources/examples
+order: 1000

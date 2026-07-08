@@ -1,0 +1,25 @@
+$kind: http-example
+request:
+  url: http://localhost:3000/auth/me
+  method: GET
+  headers:
+    Authorization: Bearer <access_token>
+response:
+  statusCode: 200
+  statusText: OK
+  body:
+    type: text
+    content: |-
+      {
+        "success": true,
+        "message": "OK",
+        "data": {
+          "id": "uuid-of-user",
+          "full_name": "John Doe",
+          "avatar_url": null,
+          "email": "john@example.com",
+          "email_verified": false,
+          "created_at": "2026-06-30T10:00:00.000Z"
+        }
+      }
+order: 1000

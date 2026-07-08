@@ -1,0 +1,10 @@
+$kind: http-request
+name: "Admin: Hard Delete Property"
+description: Permanently deletes a property from the database. Requires
+  manage_properties permission.
+url: http://localhost:3000/properties/{{propertyId}}/admin
+method: DELETE
+headers:
+  Authorization: Bearer <access_token>
+examples: ./.resources/Admin- Hard Delete Property.resources/examples
+order: 3000

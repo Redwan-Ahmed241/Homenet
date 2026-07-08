@@ -1,0 +1,32 @@
+$kind: http-example
+request:
+  url: http://localhost:3000/properties/{{propertyId}}/admin
+  method: PATCH
+  headers:
+    Content-Type: application/json
+    Authorization: Bearer <access_token>
+  pathVariables:
+    propertyId: uuid-of-property
+  body:
+    type: json
+    content: |-
+      {
+        "title": "Admin Updated Title",
+        "status": "active"
+      }
+response:
+  statusCode: 200
+  statusText: OK
+  body:
+    type: text
+    content: |-
+      {
+        "success": true,
+        "message": "OK",
+        "data": {
+          "id": "uuid-of-property",
+          "title": "Admin Updated Title",
+          "status": "active"
+        }
+      }
+order: 1000

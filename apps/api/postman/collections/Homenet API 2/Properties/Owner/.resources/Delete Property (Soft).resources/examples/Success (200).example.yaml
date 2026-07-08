@@ -1,0 +1,22 @@
+$kind: http-example
+request:
+  url: ""
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  body:
+    type: text
+    content: |-
+      {
+        "success": true,
+        "message": "OK",
+        "data": {
+          "id": "uuid-of-property",
+          "user_id": "uuid-of-user",
+          "area_id": "uuid-of-area",
+          "title": "Modern 3BR Apartment in Banani",
+          "status": "archived"
+        }
+      }
+order: 1000

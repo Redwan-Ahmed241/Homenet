@@ -1,0 +1,20 @@
+$kind: http-example
+request:
+  url: ""
+  method: GET
+response:
+  statusCode: 200
+  statusText: OK
+  body:
+    type: text
+    content: |-
+      {
+        "success": true,
+        "message": "OK",
+        "data": {
+          "id": "uuid-of-property",
+          "title": "Admin Updated Title",
+          "status": "active"
+        }
+      }
+order: 1000

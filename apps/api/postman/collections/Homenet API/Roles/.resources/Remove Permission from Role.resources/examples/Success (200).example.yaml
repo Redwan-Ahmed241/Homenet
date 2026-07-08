@@ -1,0 +1,23 @@
+$kind: http-example
+request:
+  url: http://localhost:3000/roles/{{roleId}}/permissions/{{permissionId}}
+  method: DELETE
+  headers:
+    Authorization: Bearer <access_token>
+  pathVariables:
+    roleId: uuid-of-role
+    permissionId: uuid-of-permission
+response:
+  statusCode: 200
+  statusText: OK
+  body:
+    type: text
+    content: |-
+      {
+        "success": true,
+        "message": "OK",
+        "data": {
+          "count": 1
+        }
+      }
+order: 1000

@@ -1,0 +1,7 @@
+$kind: http-request
+description: Returns all direct sub-areas (children) of the given area. No
+  authentication required.
+url: http://localhost:3000/areas/{{areaId}}/children
+method: GET
+examples: ./.resources/Get Area Children.resources/examples
+order: 3000

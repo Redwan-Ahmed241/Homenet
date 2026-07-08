@@ -1,0 +1,24 @@
+$kind: http-example
+request:
+  url: http://localhost:3000/properties/admin
+  method: GET
+  headers:
+    Authorization: Bearer <access_token>
+response:
+  statusCode: 200
+  statusText: OK
+  body:
+    type: text
+    content: |-
+      {
+        "success": true,
+        "message": "OK",
+        "data": {
+          "items": [],
+          "total": 0,
+          "page": 1,
+          "limit": 20,
+          "total_pages": 0
+        }
+      }
+order: 1000
