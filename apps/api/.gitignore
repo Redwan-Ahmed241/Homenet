@@ -4,3 +4,6 @@ node_modules
 
 /generated/prisma
 server.err
+
+# Keep personal Postman environments out of version control
+postman/environments/*.local.json

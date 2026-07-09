@@ -1,6 +1,7 @@
 $kind: http-request
+name: Refresh Token
 description: Exchange a valid refresh token for a new token pair (rotation).
-url: http://localhost:3000/auth/refresh
+url: "{{base_url}}/auth/refresh"
 method: POST
 headers:
   Content-Type: application/json
@@ -8,7 +9,7 @@ body:
   type: json
   content: |-
     {
-      "refresh_token": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      "refresh_token": "{{refresh_token}}"
     }
 examples: ./.resources/Refresh Token.resources/examples
 order: 3000
