@@ -91,7 +91,7 @@ Creates a new user account with a local (email/password) identity. No authentica
 **Request:**
 
 ```
-POST http://localhost:3000/auth/register
+POST    
 Content-Type: application/json
 ```
 
@@ -1088,6 +1088,154 @@ Authorization: Bearer <access_token>
 
 ---
 
+## 6. Properties — PropertyMedia
+
+> **Note:** This section covers PropertyMedia operations only. Full Property CRUD documentation will be added separately.
+
+### 6.1 Add Media to Property
+
+### `POST /properties/:id/media`
+
+Uploads an image or video file to a property. The file is uploaded to Cloudinary; the `public_id` is stored internally and never exposed in responses. Requires authentication as the property owner or `manage_properties` permission.
+
+**Request:**
+
+```
+POST http://localhost:3000/properties/uuid-of-property/media
+Content-Type: multipart/form-data
+Authorization: Bearer <access_token>
+```
+
+**Form data fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `file` | File | Yes | Image (JPEG/PNG/WebP) or video (MP4/MOV) |
+| `media_type` | Text | Yes | `image` or `video` |
+| `display_order` | Text | No | Integer >= 0 (auto-assigned if omitted) |
+
+**Response (201):**
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "id": "uuid-of-media",
+    "property_id": "uuid-of-property",
+    "media_type": "image",
+    "url": "https://res.cloudinary.com/.../image/upload/v123/homenet/properties/.../image.jpg",
+    "thumbnail_url": "https://res.cloudinary.com/.../image/upload/w_400,h_300,c_fill/v123/homenet/properties/.../image.jpg",
+    "display_order": 0,
+    "created_at": "2026-07-09T12:00:00.000Z"
+  }
+}
+```
+
+**Error — Property not found (404):**
+
+```json
+{
+  "success": false,
+  "message": "Property not found",
+  "error_code": 1500,
+  "data": null
+}
+```
+
+**Error — Invalid file type (400):**
+
+```json
+{
+  "success": false,
+  "message": "Invalid file type. Allowed types: JPEG, PNG, WebP (images), MP4, MOV (videos)",
+  "error_code": 1511,
+  "data": null
+}
+```
+
+**Error — File too large (400):**
+
+```json
+{
+  "success": false,
+  "message": "File size exceeds the maximum allowed limit",
+  "error_code": 1512,
+  "data": null
+}
+```
+
+**Error — Media limit reached (400):**
+
+```json
+{
+  "success": false,
+  "message": "Media limit reached for this property",
+  "error_code": 1513,
+  "data": null
+}
+```
+
+**Error — Not authorized (403):**
+
+```json
+{
+  "success": false,
+  "message": "You do not have permission to add media to this property",
+  "error_code": 1003,
+  "data": null
+}
+```
+
+---
+
+### 6.2 Remove Media from Property
+
+### `DELETE /properties/media/:mediaId`
+
+Deletes a media record from the database and removes the associated file from Cloudinary. Requires authentication as the property owner or `manage_properties` permission.
+
+**Request:**
+
+```
+DELETE http://localhost:3000/properties/media/uuid-of-media
+Authorization: Bearer <access_token>
+```
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": null
+}
+```
+
+**Error — Media not found (404):**
+
+```json
+{
+  "success": false,
+  "message": "Media not found",
+  "error_code": 1510,
+  "data": null
+}
+```
+
+**Error — Not authorized (403):**
+
+```json
+{
+  "success": false,
+  "message": "You do not have permission to remove this media",
+  "error_code": 1003,
+  "data": null
+}
+```
+
+---
+
 ## Error Codes Quick Reference
 
 | Code | Description | HTTP Status |
@@ -1113,6 +1261,14 @@ Authorization: Bearer <access_token>
 | 1400 | Area not found | 404 |
 | 1401 | Area already exists | 409 |
 | 1402 | Cannot delete area with active listings | 400 |
+| 1500 | Property not found | 404 |
+| 1501 | Property access denied | 403 |
+| 1503 | Invalid amenities structure | 400 |
+| 1510 | Media not found | 404 |
+| 1511 | Invalid file type | 400 |
+| 1512 | File too large | 400 |
+| 1513 | Media limit reached | 400 |
+| 1514 | Media upload failed | 500 |
 
 ---
 
@@ -1128,7 +1284,15 @@ Authorization: Bearer <access_token>
 8. **List Areas** — View all seeded areas via `GET /areas` (no auth needed)
 9. **Get Area Details** — View a single area via `GET /areas/:id` (no auth needed)
 10. **Get Area Children** — View sub-areas via `GET /areas/:id/children` (no auth needed)
+11. **Add Property Media** — Upload an image to a property via `POST /properties/:id/media` (multipart form-data with `file`, `media_type`, `display_order`)
+12. **Add Another Image** — Upload a second image with `display_order: 1` to the same property
+13. **Delete Property Media** — Remove a media item via `DELETE /properties/media/:mediaId` (verifies Cloudinary cleanup)
+14. **Upload Invalid File Type** — Try uploading a `.pdf` file (expects error code 1511)
+15. **Upload Oversized File** — Try uploading a file > 10 MB (expects error code 1512)
+16. **Unauthorized Media Access** — Try uploading/deleting media as a non-owner (expects 403)
 
 > **For Roles & Permissions**, you'll need to insert roles/permissions directly into the database first (there's no seed data). Use raw SQL or a Prisma script to create roles and permissions before testing those endpoints.
 >
 > **For Areas**, seed data is available. Run `npm run seed:areas` to populate 31 Dhaka areas (10 top-level + 21 children). Read endpoints require no authentication. Write endpoints (create/update/delete) require a JWT with the `manage_areas` permission.
+>
+> **For Property Media**, you'll need to create a property first (there's no seed data for properties). Use `POST /properties` with valid `area_id`, `title`, `type`, `listing_type`, and `price`. Property create requires authentication. Then use the property ID to test media upload/delete. Cloudinary environment variables (`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`) must be set in `.env` for media uploads to work.

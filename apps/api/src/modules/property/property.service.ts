@@ -1,4 +1,5 @@
 import { Injectable, Inject, ForbiddenException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import type { ICacheService } from '../../common/cache/cache.service.interface.js';
 import { CACHE_TTL } from '../../common/cache/cache.service.interface.js';
 import { LoggerService } from '../../common/logger/logger.service.js';
@@ -9,6 +10,8 @@ import { UpdatePropertyDto } from './dto/update-property.dto.js';
 import { PropertyQueryDto } from './dto/property-query.dto.js';
 import { CreatePropertyMediaDto } from './dto/create-property-media.dto.js';
 import type { IPropertyRepository } from './interfaces/property-repository.interface.js';
+import { UPLOAD_FOLDERS, ALLOWED_MIMETYPES, UPLOAD_LIMITS_MB } from '../../common/upload/upload.constants.js';
+import type { IUploadService } from '../../common/upload/interfaces/upload.service.interface.js';
 
 @Injectable()
 export class PropertyService {
@@ -16,6 +19,8 @@ export class PropertyService {
     @Inject('IPropertyRepository') private readonly propertyRepo: IPropertyRepository,
     private readonly logger: LoggerService,
     @Inject('ICacheService') private readonly cacheService: ICacheService,
+    @Inject('IUploadService') private readonly uploadService: IUploadService,
+    private readonly configService: ConfigService,
   ) {}
 
   private generateCacheKey(prefix: string, data: any): string {
@@ -251,69 +256,135 @@ export class PropertyService {
     await this.invalidateAll(id);
   }
 
-  async addMedia(propertyId: string, dto: CreatePropertyMediaDto, userId: string, isAdmin: boolean) {
+  async addMedia(
+    propertyId: string,
+    file: Express.Multer.File,
+    dto: CreatePropertyMediaDto,
+    userId: string,
+    isAdmin: boolean,
+  ) {
+    // 1. Check property exists
     const property = await this.propertyRepo.findById(propertyId);
 
     if (!property) {
       this.logger.warn(`Property not found: ${propertyId}`, {
         fileName: 'property.service.ts',
         functionName: 'addMedia',
-        lineNumber: 266,
+        lineNumber: 271,
       });
       throw new AppException(PROPERTY_ERRORS.PROPERTY_NOT_FOUND);
     }
 
+    // 2. Check ownership
     if (property.user_id !== userId && !isAdmin) {
       this.logger.warn(`User ${userId} attempted to add media to property ${propertyId} without permission`, {
         fileName: 'property.service.ts',
         functionName: 'addMedia',
-        lineNumber: 273,
+        lineNumber: 279,
       });
       throw new ForbiddenException('You do not have permission to add media to this property');
     }
 
+    // 3. Count existing media of same type
+    const existingCount = await this.propertyRepo.countMedia(propertyId, dto.media_type);
+    const limit = dto.media_type === 'image'
+      ? this.configService.get<number>('MAX_IMAGES_PER_PROPERTY', 20)
+      : this.configService.get<number>('MAX_VIDEOS_PER_PROPERTY', 3);
+
+    if (existingCount >= limit) {
+      this.logger.warn(`Media limit reached for property: ${propertyId}`, {
+        fileName: 'property.service.ts',
+        functionName: 'addMedia',
+        lineNumber: 292,
+      });
+      throw new AppException(PROPERTY_ERRORS.MEDIA_LIMIT_REACHED);
+    }
+
+    // 4. Determine folder and allowed types from the actual file, not from dto.media_type
+    const isImage = file.mimetype.startsWith('image/');
+    const actualMediaType = isImage ? 'image' : 'video';
+    const folder = isImage
+      ? UPLOAD_FOLDERS.PROPERTY_IMAGES.replace('{id}', propertyId)
+      : UPLOAD_FOLDERS.PROPERTY_VIDEOS.replace('{id}', propertyId);
+    const allowedMimetypes = isImage ? ALLOWED_MIMETYPES.IMAGES : ALLOWED_MIMETYPES.VIDEOS;
+    const maxSizeMb = isImage ? UPLOAD_LIMITS_MB.IMAGE : UPLOAD_LIMITS_MB.VIDEO;
+
+    this.logger.info(`addMedia — dto.media_type="${dto.media_type}", file.mimetype="${file.mimetype}", resolvedType="${actualMediaType}"`, {
+      fileName: 'property.service.ts',
+      functionName: 'addMedia',
+      lineNumber: 305,
+    });
+
+    // 5. Upload to Cloudinary
+    const uploaded = await this.uploadService.uploadFile(file, folder, allowedMimetypes, maxSizeMb);
+
+    // 6. Determine display_order
     let displayOrder = dto.display_order;
     if (displayOrder === undefined) {
       const lastOrder = await this.propertyRepo.findLastMediaOrder(propertyId);
       displayOrder = (lastOrder ?? -1) + 1;
     }
 
+    // 7. Save to DB — use actualMediaType derived from file, ignore user-provided dto.media_type
     const media = await this.propertyRepo.addMedia({
       property_id: propertyId,
-      media_type: dto.media_type,
-      url: dto.url,
-      thumbnail_url: dto.thumbnail_url,
+      media_type: actualMediaType,
+      url: uploaded.url,
+      public_id: uploaded.public_id,
+      thumbnail_url: uploaded.thumbnail_url ?? undefined,
       display_order: displayOrder,
+      analysis: {},
     });
 
     await this.invalidateDetailCache(propertyId);
+
+    this.logger.info(`PropertyMedia created: ${media.id} for property: ${propertyId}`, {
+      fileName: 'property.service.ts',
+      functionName: 'addMedia',
+      lineNumber: 327,
+    });
+
     return media;
   }
 
   async removeMedia(mediaId: string, userId: string, isAdmin: boolean) {
+    // 1. Find media
     const media = await this.propertyRepo.findMediaById(mediaId);
 
     if (!media) {
       this.logger.warn(`Media not found: ${mediaId}`, {
         fileName: 'property.service.ts',
         functionName: 'removeMedia',
-        lineNumber: 302,
+        lineNumber: 358,
       });
       throw new AppException(PROPERTY_ERRORS.MEDIA_NOT_FOUND);
     }
 
+    // 2. Check ownership
     if (media.property.user_id !== userId && !isAdmin) {
       this.logger.warn(`User ${userId} attempted to remove media ${mediaId} without permission`, {
         fileName: 'property.service.ts',
         functionName: 'removeMedia',
-        lineNumber: 309,
+        lineNumber: 366,
       });
       throw new ForbiddenException('You do not have permission to remove this media');
     }
 
+    // 3. Delete from DB FIRST (before Cloudinary)
     await this.propertyRepo.deleteMedia(mediaId);
 
+    // 4. Then delete from Cloudinary (failure logged, not thrown)
+    //    Pass media_type so videos are deleted with resource_type: 'video'
+    const cloudinaryResourceType = media.media_type === 'video' ? 'video' : 'image';
+    await this.uploadService.deleteFile(media.public_id, cloudinaryResourceType);
+
     await this.invalidateDetailCache(media.property_id);
+
+    this.logger.info(`PropertyMedia deleted: ${mediaId} from property: ${media.property_id}`, {
+      fileName: 'property.service.ts',
+      functionName: 'removeMedia',
+      lineNumber: 382,
+    });
   }
 
   async findAllAdmin(query: PropertyQueryDto) {
