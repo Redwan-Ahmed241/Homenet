@@ -225,10 +225,11 @@ model PropertyMedia {
   id             String     @id @default(uuid())
   property_id    String
   media_type     MediaType  @default(image)
-  url            String
+  url            String     // Cloudinary secure_url
+  public_id      String     // Cloudinary public_id — required for delete
   thumbnail_url  String?
   display_order  Int        @default(0)
-  analysis       Json?
+  analysis       Json       @default("{}")
   created_at     DateTime   @default(now())
 
   // Relations

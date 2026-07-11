@@ -14,6 +14,7 @@ The **Homenet API** is built with **NestJS** (v11) following the framework's mod
 | **CacheServiceModule** | Centralised caching service. | `src/common/cache/*` |
 | **AreaModule** | Manages area entities and related business logic. | `src/modules/area/*` |
 | **PropertyModule** | Handles property CRUD, media, and queries. | `src/modules/property/*` |
+| **UploadModule** | Handles media uploads to Cloudinary, provides upload service and config. | `src/common/upload/*` |
 | **Global Guards** | JWT auth, permissions, and rate‑limiting are registered as `APP_GUARD`s. | `src/app.module.ts` (providers) |
 
 ## Global Providers (app.module.ts)

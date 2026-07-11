@@ -5,7 +5,7 @@ Welcome to the OpenWiki documentation for the **Homenet** API (NestJS).
 ## Overview
 The repository implements a **NestJS** server that provides a REST API for a property‑listing platform.  Key technical pillars are:
 
-- **NestJS** modular architecture (Auth, User, Role, Area, Property, etc.)
+- **NestJS** modular architecture (Auth, User, Role, Area, Property, Upload, etc.)
 - **Prisma** ORM with a PostgreSQL database (see `prisma/schema.prisma`)
 - **RBAC** with permissions, decorators and guards (`src/modules/role/*`)
 - **JWT** based authentication and local‑strategy login (`src/modules/auth/*`)
