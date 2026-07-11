@@ -8,28 +8,35 @@ This guide covers how to get the Homenet API up and running locally, as well as 
   👉 **If you haven't set up the database yet, please follow the [Database Development Guide](./db-dev-guide.md) first.**
 
 ## 2. Install Dependencies
-Run the following command in the `apps/api` directory to install all necessary packages:
+You can manually install all packages in the `apps/api` directory:
 ```bash
 npm install
 ```
+> **Tip:** All development and build scripts below run `npm install` automatically before doing anything else, so a manual install is only needed if you want to pull in new packages without starting the server.
 
 ## 3. Environment Variables
 Ensure you have a `.env` file in the root of the project with the required variables (e.g., `DATABASE_URL`, `JWT_SECRET`, etc.).
 
 ## 4. Build & Run
-You can run the application in several modes:
+You can run the application in several modes. Every script below runs `npm install` first, so dependencies are always up‑to‑date — even on a fresh clone or after switching branches.
 
 **Development Mode (Live Reload):**
 ```bash
 npm run start:dev
 ```
-> This will automatically run any pending Prisma migrations before starting the NestJS server in watch mode.
+> Installs dependencies, runs any pending Prisma migrations, and starts the NestJS server in watch mode.
+
+**Debug Mode:**
+```bash
+npm run start:debug
+```
+> Same as `start:dev` but attaches the Node.js debugger.
 
 **Full Dev Setup (Reset + Seed + Run):**
 ```bash
 npm run dev:setup
 ```
-> This is a one‑command workflow that resets the database, re‑applies all migrations, seeds the database with sample data, and starts the dev server. Useful when you want a clean slate.
+> A one‑command workflow that installs dependencies, resets the database, re‑applies all migrations, seeds the database with sample data, and starts the dev server. Useful when you want a clean slate.
 
 **Standard Build (Production):**
 ```bash
