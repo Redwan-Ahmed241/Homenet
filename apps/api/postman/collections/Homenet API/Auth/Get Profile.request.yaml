@@ -1,8 +1,11 @@
 $kind: http-request
+name: Get Profile
 description: Returns the currently authenticated user's profile. JWT required.
-url: http://localhost:3000/auth/me
+url: "{{base_url}}/auth/me"
 method: GET
-headers:
-  Authorization: Bearer <access_token>
+auth:
+  type: bearer
+  credentials:
+    token: "{{access_token}}"
 examples: ./.resources/Get Profile.resources/examples
 order: 5000

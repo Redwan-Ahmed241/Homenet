@@ -7,7 +7,11 @@ import {
   Param,
   Body,
   Query,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import { Throttle } from '@nestjs/throttler';
 import { PropertyService } from './property.service.js';
 import { CreatePropertyDto } from './dto/create-property.dto.js';
@@ -77,13 +81,15 @@ export class PropertyController {
   }
 
   @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
   @Post(':id/media')
   addMedia(
     @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
     @Body() dto: CreatePropertyMediaDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.propertyService.addMedia(id, dto, user.id, false);
+    return this.propertyService.addMedia(id, file, dto, user.id, false);
   }
 
   @Throttle({ default: { limit: 10, ttl: 60000 } })

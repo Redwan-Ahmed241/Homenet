@@ -45,9 +45,10 @@ CREATE TABLE "PropertyMedia" (
     "property_id" TEXT NOT NULL,
     "media_type" "MediaType" NOT NULL DEFAULT 'image',
     "url" TEXT NOT NULL,
+    "public_id" TEXT NOT NULL,
     "thumbnail_url" TEXT,
     "display_order" INTEGER NOT NULL DEFAULT 0,
-    "analysis" JSONB,
+    "analysis" JSONB DEFAULT '{}',
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT "PropertyMedia_pkey" PRIMARY KEY ("id")

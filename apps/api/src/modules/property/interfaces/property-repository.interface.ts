@@ -88,6 +88,7 @@ export interface PropertyMedia {
   property_id: string;
   media_type: string;
   url: string;
+  public_id: string;
   thumbnail_url: string | null;
   display_order: number;
 }
@@ -124,15 +125,20 @@ export interface IPropertyRepository {
     property_id: string;
     media_type: string;
     url: string;
+    public_id: string;
     thumbnail_url?: string | null;
     display_order: number;
+    analysis?: Record<string, any>;
   }): Promise<PropertyMedia>;
   findLastMediaOrder(propertyId: string): Promise<number | null>;
   findMediaById(mediaId: string): Promise<{
     id: string;
     property_id: string;
+    public_id: string;
+    media_type: string;
     property: { user_id: string };
   } | null>;
   deleteMedia(mediaId: string): Promise<void>;
+  countMedia(propertyId: string, mediaType: string): Promise<number>;
   findAllAdmin(query: PropertyQueryParams): Promise<PaginatedResult<PropertyListItem>>;
 }

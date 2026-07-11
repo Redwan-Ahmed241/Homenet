@@ -8,6 +8,7 @@ import { RoleModule } from './modules/role/role.module.js';
 import { AuthModule } from './modules/auth/auth.module.js';
 import { AreaModule } from './modules/area/area.module.js';
 import { PropertyModule } from './modules/property/property.module.js';
+import { UploadModule } from './common/upload/upload.module.js';
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard.js';
 import { PermissionsGuard } from './modules/role/guards/permissions.guard.js';
 import { AppController } from './app.controller.js';
@@ -31,6 +32,7 @@ import { CacheServiceModule } from './common/cache/cache.module.js';
     PrismaModule,
     LoggerModule,
     CacheServiceModule,
+    UploadModule,
     AuthModule,
     UserModule,
     RoleModule,

@@ -386,23 +386,27 @@ export class PrismaPropertyRepository implements IPropertyRepository {
     property_id: string;
     media_type: string;
     url: string;
+    public_id: string;
     thumbnail_url?: string | null;
     display_order: number;
+    analysis?: Record<string, any>;
   }): Promise<PropertyMedia> {
     const media = await this.prisma.propertyMedia.create({
       data: {
         property_id: data.property_id,
         media_type: data.media_type as any,
         url: data.url,
+        public_id: data.public_id,
         thumbnail_url: data.thumbnail_url,
         display_order: data.display_order,
+        analysis: data.analysis ?? undefined,
       },
     });
 
     this.logger.info(`Media added to property ${data.property_id}: ${media.id}`, {
       fileName: 'prisma-property.repository.ts',
       functionName: 'addMedia',
-      lineNumber: 335,
+      lineNumber: 345,
     });
 
     return media as unknown as PropertyMedia;
@@ -418,14 +422,28 @@ export class PrismaPropertyRepository implements IPropertyRepository {
     return lastMedia?.display_order ?? null;
   }
 
+  async countMedia(propertyId: string, mediaType: string): Promise<number> {
+    const count = await this.prisma.propertyMedia.count({
+      where: { property_id: propertyId, media_type: mediaType as any },
+    });
+
+    return count;
+  }
+
   async findMediaById(mediaId: string): Promise<{
     id: string;
     property_id: string;
+    public_id: string;
+    media_type: string;
     property: { user_id: string };
   } | null> {
     const media = await this.prisma.propertyMedia.findUnique({
       where: { id: mediaId },
-      include: {
+      select: {
+        id: true,
+        property_id: true,
+        public_id: true,
+        media_type: true,
         property: { select: { id: true, user_id: true } },
       },
     });
@@ -435,6 +453,8 @@ export class PrismaPropertyRepository implements IPropertyRepository {
     return {
       id: media.id,
       property_id: media.property_id,
+      public_id: media.public_id,
+      media_type: media.media_type,
       property: { user_id: media.property.user_id },
     };
   }
