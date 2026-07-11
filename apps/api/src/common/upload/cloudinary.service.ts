@@ -1,13 +1,18 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { v2 as cloudinary, UploadApiResponse } from 'cloudinary';
-import { Readable } from 'stream';
+import { v2 as cloudinary } from 'cloudinary';
 import * as crypto from 'crypto';
 import { CLOUDINARY_TOKEN } from './upload.config.js';
 import { LoggerService } from '../logger/logger.service.js';
 import { AppException } from '../errors/app.exception.js';
 import { PROPERTY_ERRORS } from '../errors/error-codes.js';
 import type { IUploadService, UploadResult } from './interfaces/upload.service.interface.js';
+import {
+  validateFileType,
+  validateFileSize,
+  resolveResourceType,
+  cloudinaryUpload,
+} from './upload.utils.js';
 
 type CloudinaryInstance = typeof cloudinary;
 
@@ -25,70 +30,28 @@ export class UploadService implements IUploadService {
     allowedMimetypes: readonly string[],
     maxSizeMb: number,
   ): Promise<UploadResult> {
-    const fileName = 'upload.service.ts';
+    const fileName = 'cloudinary.service.ts';
     const functionName = 'uploadFile';
 
-    // 1. Validate mimetype
-    if (!allowedMimetypes.includes(file.mimetype)) {
-      this.logger.warn(`Invalid file type: ${file.mimetype} — allowed: [${allowedMimetypes.join(', ')}]`, {
-        fileName,
-        functionName,
-        lineNumber: 28,
-      });
-      throw new AppException(PROPERTY_ERRORS.MEDIA_INVALID_FILE_TYPE);
-    }
+    // 1. Validate mimetype and file size (log warning + throw on failure)
+    validateFileType(file.mimetype, allowedMimetypes, this.logger, { fileName, functionName, lineNumber: 28 });
+    validateFileSize(file.size, maxSizeMb, this.logger, { fileName, functionName, lineNumber: 37 });
 
-    // 2. Validate file size
-    const maxBytes = maxSizeMb * 1024 * 1024;
-    if (file.size > maxBytes) {
-      this.logger.warn(`File size exceeded: ${file.size} bytes`, {
-        fileName,
-        functionName,
-        lineNumber: 37,
-      });
-      throw new AppException(PROPERTY_ERRORS.MEDIA_FILE_TOO_LARGE);
-    }
+    // 2. Determine resource_type and mapped type
+    const { cloudinaryResourceType, mappedResourceType } = resolveResourceType(file.mimetype);
 
-    // 3. Determine resource_type and mapped type
-    let cloudinaryResourceType: 'image' | 'video' | 'raw';
-    let mappedResourceType: 'image' | 'video' | 'document';
-    if (file.mimetype.startsWith('image/')) {
-      cloudinaryResourceType = 'image';
-      mappedResourceType = 'image';
-    } else if (file.mimetype.startsWith('video/')) {
-      cloudinaryResourceType = 'video';
-      mappedResourceType = 'video';
-    } else {
-      cloudinaryResourceType = 'raw';
-      mappedResourceType = 'document';
-    }
-
-    // 4. Generate publicId — never use original filename
+    // 3. Generate publicId — never use original filename
     const publicId = crypto.randomUUID();
 
     try {
-      // 5. Upload to Cloudinary using upload_stream
-      const result = await new Promise<UploadApiResponse>((resolve, reject) => {
-        const uploadStream = this.cloudinaryClient.uploader.upload_stream(
-          {
-            folder,
-            public_id: publicId,
-            resource_type: cloudinaryResourceType,
-          },
-          (error: any, result: UploadApiResponse | undefined) => {
-            if (error) {
-              reject(error);
-            } else if (result) {
-              resolve(result);
-            } else {
-              reject(new Error('Cloudinary upload returned no result'));
-            }
-          },
-        );
-
-        const readable = Readable.from(file.buffer);
-        readable.pipe(uploadStream);
-      });
+      // 4. Upload to Cloudinary via stream
+      const result = await cloudinaryUpload(
+        this.cloudinaryClient,
+        file.buffer,
+        folder,
+        publicId,
+        cloudinaryResourceType,
+      );
 
       this.logger.info(`Cloudinary upload success: ${publicId}`, {
         fileName,
@@ -96,12 +59,12 @@ export class UploadService implements IUploadService {
         lineNumber: 82,
       });
 
-      // 6. Generate thumbnail_url
+      // 5. Generate thumbnail_url
       const thumbnailUrl = this.getThumbnailUrl(result.secure_url, mappedResourceType as 'image' | 'video');
 
       return {
         url: result.secure_url,
-        public_id: result.public_id, // Use full Cloudinary public_id (includes folder prefix)
+        public_id: result.public_id,
         thumbnail_url: thumbnailUrl,
         resource_type: mappedResourceType,
       };
@@ -116,7 +79,7 @@ export class UploadService implements IUploadService {
   }
 
   async deleteFile(publicId: string, resourceType: 'image' | 'video' | 'raw' = 'image'): Promise<void> {
-    const fileName = 'upload.service.ts';
+    const fileName = 'cloudinary.service.ts';
     const functionName = 'deleteFile';
 
     try {

@@ -1,10 +1,6 @@
 export const UPLOAD_FOLDERS = {
   PROPERTY_IMAGES:       'homenet/properties/{id}/images',
   PROPERTY_VIDEOS:       'homenet/properties/{id}/videos',
-  VERIFICATION_NID:      'homenet/verifications/{id}/nid',
-  VERIFICATION_DEED:     'homenet/verifications/{id}/deed',
-  VERIFICATION_GPS:      'homenet/verifications/{id}/gps_photos',
-  AGENT_LICENSE:         'homenet/agents/{id}/trade_license',
   USER_AVATAR:           'homenet/users/{id}/avatar',
 } as const;
 

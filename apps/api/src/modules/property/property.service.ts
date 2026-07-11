@@ -326,7 +326,9 @@ export class PropertyService {
     }
 
     // 7. Save to DB — use actualMediaType derived from file, ignore user-provided dto.media_type
-    const media = await this.propertyRepo.addMedia({
+    let media:any;
+    try{
+     media = await this.propertyRepo.addMedia({
       property_id: propertyId,
       media_type: actualMediaType,
       url: uploaded.url,
@@ -335,7 +337,20 @@ export class PropertyService {
       display_order: displayOrder,
       analysis: {},
     });
-
+  }catch(dbError){
+    // DB save failed — clean up the orphaned Cloudinary file immediately
+      this.logger.warn(
+        `DB save failed after Cloudinary upload — deleting orphaned file ${uploaded.public_id}`,
+        {
+          fileName:'property.service.ts',
+          functionName: 'addMedia',
+          lineNumber : 320,
+        },
+      );
+      const cloudinaryResourceType = isImage ? 'image' : 'video';
+      await this.uploadService.deleteFile(uploaded.public_id, cloudinaryResourceType);
+      throw new AppException(PROPERTY_ERRORS.MEDIA_UPLOAD_FAILED);
+  }
     await this.invalidateDetailCache(propertyId);
 
     this.logger.info(`PropertyMedia created: ${media.id} for property: ${propertyId}`, {

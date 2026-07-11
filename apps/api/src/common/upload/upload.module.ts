@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { UploadConfig, CLOUDINARY_TOKEN } from './upload.config.js';
-import { UploadService } from './upload.service.js';
+import { UploadService } from './cloudinary.service.js';
 
 @Module({
   imports: [ConfigModule],
