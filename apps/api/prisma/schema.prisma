@@ -167,6 +167,7 @@ enum ListingType {
 enum PropertyStatus {
   draft
   active
+  pending
   sold
   archived
 }
