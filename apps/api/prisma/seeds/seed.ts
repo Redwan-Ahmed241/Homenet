@@ -14,6 +14,7 @@ import { execSync } from 'child_process';
 import { resolve } from 'path';
 
 const seeds = [
+  resolve(__dirname, 'roles-permissions.seed.ts'),
   resolve(__dirname, 'areas.seed.ts'),
   resolve(__dirname, 'properties.seed.ts'),
 ];
