@@ -43,4 +43,14 @@ export const AUTH_ERRORS = {
     message: 'Authenticated user no longer exists',
     httpStatus: 401,
   },
+  CURRENT_PASSWORD_INCORRECT: {
+    code: 1108,
+    message: 'Current password is incorrect',
+    httpStatus: 401,
+  },
+  NEW_PASSWORD_SAME_AS_CURRENT: {
+    code: 1109,
+    message: 'New password cannot be the same as the current password',
+    httpStatus: 400,
+  },
 } as const satisfies Record<string, ErrorDefinition>;

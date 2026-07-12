@@ -60,5 +60,9 @@ export interface IAuthRepository {
 
   revokeRefreshTokensByUserAndHash(userId: string, tokenHash: string): Promise<void>;
 
+  revokeAllRefreshTokensForUser(userId: string): Promise<void>;
+
   findUserWithAuthIdentities(userId: string): Promise<UserWithAuthIdentities | null>;
+
+  updatePasswordHash(userId: string, newPasswordHash: string): Promise<void>;
 }

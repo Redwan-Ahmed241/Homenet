@@ -5,6 +5,7 @@ import type { ICacheService } from '../../common/cache/cache.service.interface.j
 import { CACHE_TTL } from '../../common/cache/cache.service.interface.js';
 import { validatePassword } from '../../common/utils/password.util.js';
 import { RegisterDto } from './dto/register.dto.js';
+import { ChangePasswordDto } from './dto/change-password.dto.js';
 import { AppException } from '../../common/errors/app.exception.js';
 import { AUTH_ERRORS } from '../../common/errors/error-codes.js';
 import * as bcrypt from 'bcrypt';
@@ -192,6 +193,64 @@ export class AuthService {
         created_at: user.created_at,
       };
     }, CACHE_TTL.DETAIL);
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<{ message: string }> {
+    // Validate new password strength
+    const validation = validatePassword(dto.new_password);
+    if (!validation.isValid) {
+      throw new AppException(AUTH_ERRORS.PASSWORD_TOO_WEAK, validation.errors.join('; '));
+    }
+
+    // Get the user's local identity with password hash
+    const user = await this.authRepo.findUserWithAuthIdentities(userId);
+    if (!user) {
+      throw new AppException(AUTH_ERRORS.USER_NOT_FOUND);
+    }
+
+    const localIdentity = user.auth_identities[0];
+    if (!localIdentity || !localIdentity.email) {
+      throw new AppException(AUTH_ERRORS.USER_IDENTITY_NOT_FOUND);
+    }
+
+    // Verify current password
+    const identityWithUser = await this.authRepo.findIdentityWithUser('LOCAL', localIdentity.email);
+    if (!identityWithUser || !identityWithUser.password_hash) {
+      throw new AppException(AUTH_ERRORS.USER_IDENTITY_NOT_FOUND);
+    }
+
+    const isCurrentPasswordValid = await bcrypt.compare(dto.current_password, identityWithUser.password_hash);
+    if (!isCurrentPasswordValid) {
+      this.logger.warn(`Password change failed - incorrect current password for user: ${userId}`, {
+        fileName: 'auth.service.ts',
+        functionName: 'changePassword',
+        lineNumber: 180,
+      });
+      throw new AppException(AUTH_ERRORS.CURRENT_PASSWORD_INCORRECT);
+    }
+
+    // Check if new password is the same as current password
+    const isSamePassword = await bcrypt.compare(dto.new_password, identityWithUser.password_hash);
+    if (isSamePassword) {
+      throw new AppException(AUTH_ERRORS.NEW_PASSWORD_SAME_AS_CURRENT);
+    }
+
+    // Hash the new password
+    const newPasswordHash = await bcrypt.hash(dto.new_password, this.BCRYPT_ROUNDS);
+
+    // Update the password hash
+    await this.authRepo.updatePasswordHash(userId, newPasswordHash);
+
+    // Revoke all refresh tokens for this user (force re-login)
+    await this.authRepo.revokeAllRefreshTokensForUser(userId);
+
+    this.logger.info(`Password changed successfully for user: ${userId}`, {
+      fileName: 'auth.service.ts',
+      functionName: 'changePassword',
+      lineNumber: 200,
+    });
+
+    return { message: 'Password changed successfully. Please log in again.' };
   }
 
   private async generateTokenPair(userId: string, email: string): Promise<TokenPair> {

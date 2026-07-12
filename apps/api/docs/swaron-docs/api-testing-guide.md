@@ -363,6 +363,93 @@ Authorization: Bearer <access_token>
 
 ---
 
+### 2.6 Change Password
+
+### `PATCH /auth/change-password`
+
+Changes the authenticated user's password. **JWT required.**  
+The new password **cannot** be the same as the current password.
+
+**Request:**
+
+```
+PATCH http://localhost:3000/auth/change-password
+Content-Type: application/json
+Authorization: Bearer <access_token>
+```
+
+**Body:**
+
+```json
+{
+  "current_password": "CurrentPass123!",
+  "new_password": "NewPass456!"
+}
+```
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "message": "Password changed successfully. Please log in again."
+  }
+}
+```
+
+**Error — Current password incorrect (401):**
+
+```json
+{
+  "success": false,
+  "message": "Current password is incorrect",
+  "error_code": 1108,
+  "data": null
+}
+```
+
+**Error — New password same as current (400):**
+
+```json
+{
+  "success": false,
+  "message": "New password cannot be the same as the current password",
+  "error_code": 1109,
+  "data": null
+}
+```
+
+**Error — Weak password (400):**
+
+```json
+{
+  "success": false,
+  "message": "Password does not meet strength requirements",
+  "error_code": 1102,
+  "data": null
+}
+```
+
+**Error — Validation failure (400):**
+
+```json
+{
+  "success": false,
+  "message": "current_password should not be empty; new_password must be longer than or equal to 8 characters",
+  "error_code": 1001,
+  "data": {
+    "errors": [
+      "current_password should not be empty",
+      "new_password must be longer than or equal to 8 characters"
+    ]
+  }
+}
+```
+
+---
+
 ## 3. Users
 
 > All user endpoints require a valid **JWT** token in the `Authorization` header.

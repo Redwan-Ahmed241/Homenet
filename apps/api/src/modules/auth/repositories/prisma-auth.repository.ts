@@ -168,6 +168,22 @@ export class PrismaAuthRepository implements IAuthRepository {
     });
   }
 
+  async revokeAllRefreshTokensForUser(userId: string): Promise<void> {
+    await this.prisma.refreshToken.updateMany({
+      where: {
+        user_id: userId,
+        revoked_at: null,
+      },
+      data: { revoked_at: new Date() },
+    });
+
+    this.logger.info(`All refresh tokens revoked for user ${userId}`, {
+      fileName: 'prisma-auth.repository.ts',
+      functionName: 'revokeAllRefreshTokensForUser',
+      lineNumber: 160,
+    });
+  }
+
   async findUserWithAuthIdentities(userId: string): Promise<UserWithAuthIdentities | null> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
@@ -190,5 +206,17 @@ export class PrismaAuthRepository implements IAuthRepository {
         verified_at: ai.verified_at,
       })),
     };
+  }
+
+  async updatePasswordHash(userId: string, newPasswordHash: string): Promise<void> {
+    await this.prisma.authIdentity.updateMany({
+      where: {
+        user_id: userId,
+        provider: 'LOCAL',
+      },
+      data: {
+        password_hash: newPasswordHash,
+      },
+    });
   }
 }
