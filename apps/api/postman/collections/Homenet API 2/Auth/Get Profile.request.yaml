@@ -1,6 +1,6 @@
 $kind: http-request
 description: Returns the currently authenticated user's profile. JWT required.
-url: http://localhost:3000/auth/me
+url: http://localhost:3000/v1/auth/me
 method: GET
 headers:
   Authorization: Bearer <access_token>

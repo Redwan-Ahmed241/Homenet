@@ -1,7 +1,7 @@
 $kind: http-request
 name: Refresh Token
 description: Exchange a valid refresh token for a new token pair (rotation).
-url: "{{base_url}}/auth/refresh"
+url: "{{base_url}}/v1/auth/refresh"
 method: POST
 headers:
   Content-Type: application/json

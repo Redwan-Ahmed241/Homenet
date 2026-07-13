@@ -16,7 +16,7 @@ import { AreaQueryDto } from './dto/area-query.dto.js';
 import { Public } from '../../common/decorators/public.decorator.js';
 import { Permissions } from '../../common/decorators/permissions.decorator.js';
 
-@Controller('areas')
+@Controller('v1/areas')
 @Throttle({ default: { limit: 60, ttl: 60000 } })
 export class AreaController {
   constructor(private readonly areaService: AreaService) {}

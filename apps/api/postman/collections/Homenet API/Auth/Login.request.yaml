@@ -1,7 +1,7 @@
 $kind: http-request
 name: Login
 description: Authenticates with email and password, returns access & refresh tokens.
-url: "{{base_url}}/auth/login"
+url: "{{base_url}}/v1/auth/login"
 method: POST
 headers:
   Content-Type: application/json

@@ -1,7 +1,7 @@
 $kind: http-request
 name: Register
 description: "Creates a new user account with email/password. Optional field: avatar_url."
-url: "{{base_url}}/auth/register"
+url: "{{base_url}}/v1/auth/register"
 method: POST
 headers:
   Content-Type: application/json

@@ -1,7 +1,7 @@
 $kind: http-request
 name: Get Profile
 description: Returns the currently authenticated user's profile. JWT required.
-url: "{{base_url}}/auth/me"
+url: "{{base_url}}/v1/auth/me"
 method: GET
 auth:
   type: bearer

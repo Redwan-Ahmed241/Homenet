@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: http://localhost:3000/properties?page=1&limit=20
+  url: http://localhost:3000/v1/properties?page=1&limit=20
   method: GET
   queryParams:
     - key: page

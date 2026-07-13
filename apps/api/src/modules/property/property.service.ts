@@ -101,38 +101,62 @@ export class PropertyService {
     }, CACHE_TTL.DETAIL);
   }
 
+  /**
+   * Required fields that must ALL be present for a property to go directly
+   * to "pending" (admin review). If any is missing the property is saved
+   * as "draft" so the user can complete it later.
+   *
+   * Note: `area_id` is always required by the DB and DTO — it is not
+   * listed here because its presence is guaranteed.
+   */
+  private readonly REQUIRED_FIELDS: readonly string[] = [
+    'title', 'type', 'listing_type', 'price',
+  ];
+
+  private computeInitialStatus(dto: CreatePropertyDto): 'draft' | 'pending' {
+    const allPresent = this.REQUIRED_FIELDS.every((field) => {
+      const val = (dto as unknown as Record<string, unknown>)[field];
+      return val !== undefined && val !== null && val !== '';
+    });
+    return allPresent ? 'pending' : 'draft';
+  }
+
   async create(dto: CreatePropertyDto, userId: string) {
+    // Validate area exists
     const area = await this.propertyRepo.findAreaById(dto.area_id);
     if (!area) {
       this.logger.warn(`Area not found: ${dto.area_id}`, {
         fileName: 'property.service.ts',
         functionName: 'create',
-        lineNumber: 116,
+        lineNumber: 130,
       });
       throw new AppException(PROPERTY_ERRORS.PROPERTY_NOT_FOUND);
     }
 
-    if (dto.amenities && Object.keys(dto.amenities).length > 0) {
+    // Validate amenities only when both type and amenities are provided
+    if (dto.type && dto.amenities && Object.keys(dto.amenities).length > 0) {
       const valid = this.validateAmenities(dto.type, dto.amenities);
       if (!valid) {
         this.logger.warn(`Invalid amenities structure for property type ${dto.type}`, {
           fileName: 'property.service.ts',
           functionName: 'create',
-          lineNumber: 125,
+          lineNumber: 142,
         });
         throw new AppException(PROPERTY_ERRORS.PROPERTY_INVALID_AMENITIES);
       }
     }
 
+    const status = this.computeInitialStatus(dto);
+
     const property = await this.propertyRepo.create({
       user_id: userId,
       area_id: dto.area_id,
-      title: dto.title,
+      title: dto.title ?? '',
       description: dto.description,
-      type: dto.type,
+      type: dto.type ?? 'residential',
       subtype: dto.subtype,
-      listing_type: dto.listing_type,
-      price: dto.price,
+      listing_type: dto.listing_type ?? 'sale',
+      price: dto.price ?? 0,
       price_currency: dto.price_currency,
       area_size: dto.area_size,
       area_unit: dto.area_unit,
@@ -141,6 +165,7 @@ export class PropertyService {
       address: dto.address,
       amenities: dto.amenities,
       virtual_tour_url: dto.virtual_tour_url,
+      status,
     });
 
     await this.invalidateListCache();
@@ -231,6 +256,16 @@ export class PropertyService {
         lineNumber: 235,
       });
       throw new ForbiddenException('You do not have permission to delete this property');
+    }
+
+    // Non-admin users can only archive active or sold properties
+    if (!isAdmin && property.status !== 'active' && property.status !== 'sold') {
+      this.logger.warn(`User ${userId} attempted to archive property ${id} with status "${property.status}"`, {
+        fileName: 'property.service.ts',
+        functionName: 'remove',
+        lineNumber: 242,
+      });
+      throw new AppException(PROPERTY_ERRORS.PROPERTY_CANNOT_ARCHIVE);
     }
 
     const updated = await this.propertyRepo.softDelete(id);
@@ -411,5 +446,77 @@ export class PropertyService {
     };
 
     return this.propertyRepo.findAllAdmin(queryParams);
+  }
+
+  // ── User Property Management ──────────────────────────────
+
+  async findUserProperties(query: PropertyQueryDto, userId: string) {
+    const queryParams = {
+      ...query,
+      userId,
+      page: query.page ?? 1,
+      limit: query.limit ?? 20,
+      sort_by: query.sort_by ?? 'created_at_desc',
+    };
+
+    return this.propertyRepo.findUserProperties(queryParams);
+  }
+
+  async submitForVerification(id: string, userId: string) {
+    const property = await this.propertyRepo.findById(id);
+
+    if (!property) {
+      this.logger.warn(`Property not found: ${id}`, {
+        fileName: 'property.service.ts',
+        functionName: 'submitForVerification',
+        lineNumber: 430,
+      });
+      throw new AppException(PROPERTY_ERRORS.PROPERTY_NOT_FOUND);
+    }
+
+    if (property.user_id !== userId) {
+      this.logger.warn(`User ${userId} attempted to submit property ${id} without ownership`, {
+        fileName: 'property.service.ts',
+        functionName: 'submitForVerification',
+        lineNumber: 437,
+      });
+      throw new ForbiddenException('You do not have permission to submit this property');
+    }
+
+    if (property.status !== 'draft') {
+      this.logger.warn(`Cannot submit property ${id} with status "${property.status}" — must be draft`, {
+        fileName: 'property.service.ts',
+        functionName: 'submitForVerification',
+        lineNumber: 444,
+      });
+      throw new AppException(PROPERTY_ERRORS.PROPERTY_CANNOT_SUBMIT);
+    }
+
+    // Validate all required fields are filled before submission
+    const missingFields: string[] = [];
+    if (!property.title) missingFields.push('title');
+    if (!property.listing_type) missingFields.push('listing_type');
+    if (!property.price || property.price <= 0) missingFields.push('price');
+
+    if (missingFields.length > 0) {
+      this.logger.warn(`Cannot submit property ${id} — missing required fields: ${missingFields.join(', ')}`, {
+        fileName: 'property.service.ts',
+        functionName: 'submitForVerification',
+        lineNumber: 460,
+      });
+      throw new AppException(PROPERTY_ERRORS.PROPERTY_CANNOT_SUBMIT);
+    }
+
+    const updated = await this.propertyRepo.update(id, { status: 'pending' });
+
+    await this.invalidateAll(id);
+
+    this.logger.info(`Property ${id} submitted for verification`, {
+      fileName: 'property.service.ts',
+      functionName: 'submitForVerification',
+      lineNumber: 470,
+    });
+
+    return updated;
   }
 }

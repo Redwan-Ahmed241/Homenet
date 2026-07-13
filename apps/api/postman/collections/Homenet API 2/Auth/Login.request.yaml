@@ -1,6 +1,6 @@
 $kind: http-request
 description: Authenticates with email and password, returns access & refresh tokens.
-url: http://localhost:3000/auth/login
+url: http://localhost:3000/v1/auth/login
 method: POST
 headers:
   Content-Type: application/json

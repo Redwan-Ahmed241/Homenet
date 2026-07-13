@@ -1,7 +1,7 @@
 $kind: http-request
 description: Returns all direct sub-areas (children) of the given area. No
   authentication required.
-url: http://localhost:3000/areas/{{areaId}}/children
+url: http://localhost:3000/v1/areas/{{areaId}}/children
 method: GET
 pathVariables:
   areaId: uuid-of-area

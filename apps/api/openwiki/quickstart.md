@@ -8,7 +8,7 @@ The repository implements a **NestJS** server that provides a REST API for a pro
 - **NestJS** modular architecture (Auth, User, Role, Area, Property, Upload, etc.)
 - **Prisma** ORM with a PostgreSQL database (see `prisma/schema.prisma`)
 - **RBAC** with permissions, decorators and guards (`src/modules/role/*`)
-- **JWT** based authentication and local‑strategy login (`src/modules/auth/*`)
+- **JWT** based authentication and local‑strategy login (`src/modules/v1/auth/*`)
 - Centralised **error handling** and **API response format** (`src/common/*`)
 - **Winston** logger module (`src/common/logger/*`)
 - **Cache Service** centralized caching (`src/common/cache/*`)

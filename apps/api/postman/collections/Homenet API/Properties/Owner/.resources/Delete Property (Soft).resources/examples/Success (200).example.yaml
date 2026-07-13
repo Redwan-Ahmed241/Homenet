@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: http://localhost:3000/properties/{{propertyId}}
+  url: http://localhost:3000/v1/properties/{{propertyId}}
   method: DELETE
   headers:
     Authorization: Bearer <access_token>

@@ -1,6 +1,6 @@
 $kind: http-request
 description: Revokes a role from a user. Requires manage_roles permission.
-url: http://localhost:3000/roles/revoke
+url: http://localhost:3000/v1/roles/revoke
 method: DELETE
 headers:
   Content-Type: application/json

@@ -59,11 +59,13 @@ Error responses follow this shape:
    - [Create Property](#63-create-property)
    - [Update Property](#64-update-property)
    - [Delete Property](#65-delete-property)
-   - [Add Media](#66-add-media)
-   - [Remove Media](#67-remove-media)
-   - [Admin: List All Properties](#68-admin-list-all-properties)
-   - [Admin: Update Property](#69-admin-update-property)
-   - [Admin: Hard Delete Property](#610-admin-hard-delete-property)
+   - [My Properties](#66-my-properties)
+   - [Submit for Verification](#67-submit-for-verification)
+   - [Add Media](#68-add-media)
+   - [Remove Media](#69-remove-media)
+   - [Admin: List All Properties](#610-admin-list-all-properties)
+   - [Admin: Update Property](#611-admin-update-property)
+   - [Admin: Hard Delete Property](#612-admin-hard-delete-property)
 
 ---
 
@@ -95,14 +97,14 @@ GET http://localhost:3000
 
 ### 2.1 Register
 
-### `POST /auth/register`
+### `POST /v1/auth/register`
 
 Creates a new user account with a local (email/password) identity. No authentication required.
 
 **Request:**
 
 ```
-POST http://localhost:3000/auth/register
+POST http://localhost:3000/v1/auth/register
 Content-Type: application/json
 ```
 
@@ -176,14 +178,14 @@ Content-Type: application/json
 
 ### 2.2 Login
 
-### `POST /auth/login`
+### `POST /v1/auth/login`
 
 Authenticates with email and password, returns tokens. No authentication required.
 
 **Request:**
 
 ```
-POST http://localhost:3000/auth/login
+POST http://localhost:3000/v1/auth/login
 Content-Type: application/json
 ```
 
@@ -230,14 +232,14 @@ Content-Type: application/json
 
 ### 2.3 Refresh Token
 
-### `POST /auth/refresh`
+### `POST /v1/auth/refresh`
 
 Exchange a valid refresh token for a new token pair (rotation). No authentication required.
 
 **Request:**
 
 ```
-POST http://localhost:3000/auth/refresh
+POST http://localhost:3000/v1/auth/refresh
 Content-Type: application/json
 ```
 
@@ -288,14 +290,14 @@ Content-Type: application/json
 
 ### 2.4 Logout
 
-### `POST /auth/logout`
+### `POST /v1/auth/logout`
 
 Revokes the provided refresh token. **JWT required.**
 
 **Request:**
 
 ```
-POST http://localhost:3000/auth/logout
+POST http://localhost:3000/v1/auth/logout
 Content-Type: application/json
 Authorization: Bearer <access_token>
 ```
@@ -322,14 +324,14 @@ Authorization: Bearer <access_token>
 
 ### 2.5 Get Profile
 
-### `GET /auth/me`
+### `GET /v1/auth/me`
 
 Returns the currently authenticated user's profile. **JWT required.**
 
 **Request:**
 
 ```
-GET http://localhost:3000/auth/me
+GET http://localhost:3000/v1/auth/me
 Authorization: Bearer <access_token>
 ```
 
@@ -365,7 +367,7 @@ Authorization: Bearer <access_token>
 
 ### 2.6 Change Password
 
-### `PATCH /auth/change-password`
+### `PATCH /v1/auth/change-password`
 
 Changes the authenticated user's password. **JWT required.**  
 The new password **cannot** be the same as the current password.
@@ -373,7 +375,7 @@ The new password **cannot** be the same as the current password.
 **Request:**
 
 ```
-PATCH http://localhost:3000/auth/change-password
+PATCH http://localhost:3000/v1/auth/change-password
 Content-Type: application/json
 Authorization: Bearer <access_token>
 ```
@@ -458,14 +460,14 @@ Authorization: Bearer <access_token>
 
 ### 3.1 List All Users
 
-### `GET /users`
+### `GET /v1/users`
 
 Returns all registered users with their identity details.
 
 **Request:**
 
 ```
-GET http://localhost:3000/users
+GET http://localhost:3000/v1/users
 Authorization: Bearer <access_token>
 ```
 
@@ -499,14 +501,14 @@ Authorization: Bearer <access_token>
 
 ### 3.2 Get User by ID
 
-### `GET /users/:id`
+### `GET /v1/users/:id`
 
 Returns a single user's details.
 
 **Request:**
 
 ```
-GET http://localhost:3000/users/uuid-of-user
+GET http://localhost:3000/v1/users/uuid-of-user
 Authorization: Bearer <access_token>
 ```
 
@@ -548,27 +550,60 @@ Authorization: Bearer <access_token>
 ---
 
 ## 4. Roles & Permissions
+{
+  "success": false,
+  "message": "File size exceeded: 15728640 bytes",
+  "error_code": 1301,
+  "data": null
+}
+```
+
+**Error — User not found (404):**
+
+```json
+{
+  "success": false,
+  "message": "User not found",
+  "error_code": 1200,
+  "data": null
+}
+```
+
+**Error — Unauthorized (401):**
+
+```json
+{
+  "success": false,
+  "message": "Access token is invalid or has expired",
+  "error_code": 1106,
+  "data": null
+}
+```
+
+---
+
+## 4. Roles & Permissions
 
 > All role/permission endpoints require a valid **JWT** token.  
 > Endpoints marked with a permission require that the authenticated user has been assigned a role that includes the specified permission.
 
 | Permission Required | Endpoints |
 |---|---|
-| `view_roles` | `GET /roles`, `GET /roles/:id`, `GET /roles/user/:userId` |
-| `manage_roles` | `POST /roles/assign`, `DELETE /roles/revoke`, `POST /roles/:roleId/permissions`, `DELETE /roles/:roleId/permissions/:permissionId` |
+| `view_roles` | `GET /v1/roles`, `GET /v1/roles/:id`, `GET /v1/roles/user/:userId` |
+| `manage_roles` | `POST /v1/roles/assign`, `DELETE /v1/roles/revoke`, `POST /v1/roles/:roleId/permissions`, `DELETE /v1/roles/:roleId/permissions/:permissionId` |
 
 ---
 
 ### 4.1 List All Roles
 
-### `GET /roles`
+### `GET /v1/roles`
 
 Returns all roles with their associated permissions. Requires `view_roles` permission.
 
 **Request:**
 
 ```
-GET http://localhost:3000/roles
+GET http://localhost:3000/v1/roles
 Authorization: Bearer <access_token>
 ```
 
@@ -604,14 +639,14 @@ Authorization: Bearer <access_token>
 
 ### 4.2 Get Role by ID
 
-### `GET /roles/:id`
+### `GET /v1/roles/:id`
 
 Returns a single role with its permissions. Requires `view_roles` permission.
 
 **Request:**
 
 ```
-GET http://localhost:3000/roles/uuid-of-role
+GET http://localhost:3000/v1/roles/uuid-of-role
 Authorization: Bearer <access_token>
 ```
 
@@ -645,14 +680,14 @@ Authorization: Bearer <access_token>
 
 ### 4.3 Get User's Roles
 
-### `GET /roles/user/:userId`
+### `GET /v1/roles/user/:userId`
 
 Returns all roles assigned to a specific user. Requires `view_roles` permission.
 
 **Request:**
 
 ```
-GET http://localhost:3000/roles/user/uuid-of-user
+GET http://localhost:3000/v1/roles/user/uuid-of-user
 Authorization: Bearer <access_token>
 ```
 
@@ -683,14 +718,14 @@ Authorization: Bearer <access_token>
 
 ### 4.4 Assign Role to User
 
-### `POST /roles/assign`
+### `POST /v1/roles/assign`
 
 Assigns a role to a user. Requires `manage_roles` permission.
 
 **Request:**
 
 ```
-POST http://localhost:3000/roles/assign
+POST http://localhost:3000/v1/roles/assign
 Content-Type: application/json
 Authorization: Bearer <access_token>
 ```
@@ -735,14 +770,14 @@ Authorization: Bearer <access_token>
 
 ### 4.5 Remove Role from User
 
-### `DELETE /roles/revoke`
+### `DELETE /v1/roles/revoke`
 
 Revokes a role from a user. Requires `manage_roles` permission.
 
 **Request:**
 
 ```
-DELETE http://localhost:3000/roles/revoke
+DELETE http://localhost:3000/v1/roles/revoke
 Content-Type: application/json
 Authorization: Bearer <access_token>
 ```
@@ -772,14 +807,14 @@ Authorization: Bearer <access_token>
 
 ### 4.6 Assign Permission to Role
 
-### `POST /roles/:roleId/permissions`
+### `POST /v1/roles/:roleId/permissions`
 
 Attaches a permission to a role. Requires `manage_roles` permission.
 
 **Request:**
 
 ```
-POST http://localhost:3000/roles/uuid-of-role/permissions
+POST http://localhost:3000/v1/roles/uuid-of-role/permissions
 Content-Type: application/json
 Authorization: Bearer <access_token>
 ```
@@ -821,14 +856,14 @@ Authorization: Bearer <access_token>
 
 ### 4.7 Remove Permission from Role
 
-### `DELETE /roles/:roleId/permissions/:permissionId`
+### `DELETE /v1/roles/:roleId/permissions/:permissionId`
 
 Detaches a permission from a role. Requires `manage_roles` permission.
 
 **Request:**
 
 ```
-DELETE http://localhost:3000/roles/uuid-of-role/permissions/uuid-of-permission
+DELETE http://localhost:3000/v1/roles/uuid-of-role/permissions/uuid-of-permission
 Authorization: Bearer <access_token>
 ```
 
@@ -848,18 +883,18 @@ Authorization: Bearer <access_token>
 
 ## 5. Areas
 
-> Public read endpoints (`GET /areas`, `GET /areas/:id`, `GET /areas/:id/children`) require **no authentication**.
+> Public read endpoints (`GET /v1/areas`, `GET /v1/areas/:id`, `GET /v1/areas/:id/children`) require **no authentication**.
 > Write endpoints (`POST`, `PATCH`, `DELETE`) require a valid **JWT** and the `manage_areas` permission.
 
 | Permission Required | Endpoints |
 |---|---|
-| `manage_areas` | `POST /areas`, `PATCH /areas/:id`, `DELETE /areas/:id` |
+| `manage_areas` | `POST /v1/areas`, `PATCH /v1/areas/:id`, `DELETE /v1/areas/:id` |
 
 ---
 
 ### 5.1 List All Areas
 
-### `GET /areas`
+### `GET /v1/areas`
 
 Returns a paginated list of areas with optional filters. No authentication required.
 
@@ -876,7 +911,7 @@ Returns a paginated list of areas with optional filters. No authentication requi
 **Request:**
 
 ```
-GET http://localhost:3000/areas?page=1&limit=20
+GET http://localhost:3000/v1/areas?page=1&limit=20
 ```
 
 **Response (200):**
@@ -910,21 +945,21 @@ GET http://localhost:3000/areas?page=1&limit=20
 **Request with filters:**
 
 ```
-GET http://localhost:3000/areas?city=Dhaka&search=Gulshan&parent_area_id=uuid-of-parent
+GET http://localhost:3000/v1/areas?city=Dhaka&search=Gulshan&parent_area_id=uuid-of-parent
 ```
 
 ---
 
 ### 5.2 Get Area by ID
 
-### `GET /areas/:id`
+### `GET /v1/areas/:id`
 
 Returns a single area with its parent and children details. No authentication required.
 
 **Request:**
 
 ```
-GET http://localhost:3000/areas/uuid-of-area
+GET http://localhost:3000/v1/areas/uuid-of-area
 ```
 
 **Response (200):**
@@ -970,14 +1005,14 @@ GET http://localhost:3000/areas/uuid-of-area
 
 ### 5.3 Get Area Children
 
-### `GET /areas/:id/children`
+### `GET /v1/areas/:id/children`
 
 Returns all direct sub-areas (children) of the given area. No authentication required.
 
 **Request:**
 
 ```
-GET http://localhost:3000/areas/uuid-of-area/children
+GET http://localhost:3000/v1/areas/uuid-of-area/children
 ```
 
 **Response (200):**
@@ -1017,14 +1052,14 @@ GET http://localhost:3000/areas/uuid-of-area/children
 
 ### 5.4 Create Area
 
-### `POST /areas`
+### `POST /v1/areas`
 
 Creates a new area. Requires `manage_areas` permission.
 
 **Request:**
 
 ```
-POST http://localhost:3000/areas
+POST http://localhost:3000/v1/areas
 Content-Type: application/json
 Authorization: Bearer <access_token>
 ```
@@ -1086,14 +1121,14 @@ Authorization: Bearer <access_token>
 
 ### 5.5 Update Area
 
-### `PATCH /areas/:id`
+### `PATCH /v1/areas/:id`
 
 Updates an existing area. All fields are optional. Requires `manage_areas` permission.
 
 **Request:**
 
 ```
-PATCH http://localhost:3000/areas/uuid-of-area
+PATCH http://localhost:3000/v1/areas/uuid-of-area
 Content-Type: application/json
 Authorization: Bearer <access_token>
 ```
@@ -1139,14 +1174,14 @@ Authorization: Bearer <access_token>
 
 ### 5.6 Delete Area
 
-### `DELETE /areas/:id`
+### `DELETE /v1/areas/:id`
 
 Deletes an area. Blocked if the area has active property listings. Requires `manage_areas` permission.
 
 **Request:**
 
 ```
-DELETE http://localhost:3000/areas/uuid-of-area
+DELETE http://localhost:3000/v1/areas/uuid-of-area
 Authorization: Bearer <access_token>
 ```
 
@@ -1188,19 +1223,24 @@ Authorization: Bearer <access_token>
 
 ## 6. Properties
 
-> Public read endpoints (`GET /properties`, `GET /properties/:id`) require **no authentication**.
+> Public read endpoints (`GET /v1/properties`, `GET /v1/properties/:id`) require **no authentication**.
 > Authenticated user endpoints require a valid **JWT** token (the property owner).
 > Admin endpoints require a valid **JWT** and the `manage_properties` permission.
 
 | Permission Required | Endpoints |
 |---|---|
-| `manage_properties` | `GET /properties/admin`, `PATCH /properties/:id/admin`, `DELETE /properties/:id/admin` |
+| `manage_properties` | `GET /v1/properties/admin`, `PATCH /v1/properties/:id/admin`, `DELETE /v1/properties/:id/admin` |
+
+> **User property workflow:** `GET /v1/properties/my` returns all your properties across all statuses.
+> You can filter by `status` (draft, pending, active, archived, sold) and sort them.
+> Draft properties can be edited via `PATCH /v1/properties/:id` and submitted via `POST /v1/properties/:id/submit`.
+> Only `active` or `sold` properties can be archived via `DELETE /v1/properties/:id`.
 
 ---
 
 ### 6.1 List Properties
 
-### `GET /properties`
+### `GET /v1/properties`
 
 Returns a paginated list of active property listings with optional filters and proximity search. No authentication required.
 
@@ -1230,19 +1270,19 @@ Returns a paginated list of active property listings with optional filters and p
 **Request:**
 
 ```
-GET http://localhost:3000/properties?page=1&limit=20
+GET http://localhost:3000/v1/properties?page=1&limit=20
 ```
 
 **Request with filters:**
 
 ```
-GET http://localhost:3000/properties?type=residential&listing_type=sale&min_price=1000000&max_price=50000000&city=Dhaka
+GET http://localhost:3000/v1/properties?type=residential&listing_type=sale&min_price=1000000&max_price=50000000&city=Dhaka
 ```
 
 **Request with proximity search:**
 
 ```
-GET http://localhost:3000/properties?lat=23.7873&lng=90.4100&radius=5&sort_by=price_asc
+GET http://localhost:3000/v1/properties?lat=23.7873&lng=90.4100&radius=5&sort_by=price_asc
 ```
 
 **Response (200):**
@@ -1317,14 +1357,14 @@ GET http://localhost:3000/properties?lat=23.7873&lng=90.4100&radius=5&sort_by=pr
 
 ### 6.2 Get Property
 
-### `GET /properties/:id`
+### `GET /v1/properties/:id`
 
 Returns detailed information for a single active property listing. Increments the view count. No authentication required.
 
 **Request:**
 
 ```
-GET http://localhost:3000/properties/uuid-of-property
+GET http://localhost:3000/v1/properties/uuid-of-property
 ```
 
 **Response (200):**
@@ -1421,14 +1461,18 @@ GET http://localhost:3000/properties/uuid-of-property
 
 ### 6.3 Create Property
 
-### `POST /properties`
+### `POST /v1/properties`
 
-Creates a new property listing in `draft` status. **JWT required.**
+Creates a new property listing. **JWT required.**
+
+> **Auto-status behaviour:**
+> - If **all** required fields (`title`, `type`, `listing_type`, `price`) are provided → the property is created with status **`pending`** (sent for admin review immediately).
+> - If **any** required field is missing → the property is saved as **`draft`** so the user can complete and submit it later via [POST /v1/properties/:id/submit](#67-submit-for-verification).
 
 **Request:**
 
 ```
-POST http://localhost:3000/properties
+POST http://localhost:3000/v1/properties
 Content-Type: application/json
 Authorization: Bearer <access_token>
 ```
@@ -1462,11 +1506,13 @@ Authorization: Bearer <access_token>
 }
 ```
 
-**Required fields:** `area_id`, `title`, `type`, `listing_type`, `price`.
+**Required fields:** `area_id` (always required by DB), `title`, `type`, `listing_type`, `price` (all four needed for auto-`pending`; if any is omitted the property saves as `draft`).
 
 **Optional fields:** `description`, `subtype`, `price_currency` (default: `"BDT"`), `area_size`, `area_unit` (default: `"sqft"`), `location_lat`, `location_lng`, `address`, `amenities` (JSON object), `virtual_tour_url`.
 
 **Response (201):**
+
+> When all required fields (`title`, `type`, `listing_type`, `price`) are provided the property is created as **`pending`**:
 
 ```json
 {
@@ -1496,11 +1542,34 @@ Authorization: Bearer <access_token>
       "gas_connection": "yes",
       "electricity": "yes"
     },
-    "status": "draft",
+    "status": "pending",
     "is_verified": false,
     "virtual_tour_url": "https://tour.example.com/property-123",
     "view_count": 0,
     "published_at": null,
+    "created_at": "2026-07-07T10:00:00.000Z",
+    "updated_at": "2026-07-07T10:00:00.000Z"
+  }
+}
+```
+
+> When required fields are **missing** the property is created as **`draft`**:
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "id": "uuid-of-new-property",
+    "user_id": "uuid-of-user",
+    "area_id": "uuid-of-area",
+    "title": "",
+    "type": "",
+    "listing_type": "",
+    "price": 0,
+    "status": "draft",
+    "is_verified": false,
+    "view_count": 0,
     "created_at": "2026-07-07T10:00:00.000Z",
     "updated_at": "2026-07-07T10:00:00.000Z"
   }
@@ -1546,14 +1615,14 @@ Authorization: Bearer <access_token>
 
 ### 6.4 Update Property
 
-### `PATCH /properties/:id`
+### `PATCH /v1/properties/:id`
 
 Updates the authenticated user's own property. All fields are optional. **JWT required.**
 
 **Request:**
 
 ```
-PATCH http://localhost:3000/properties/uuid-of-property
+PATCH http://localhost:3000/v1/properties/uuid-of-property
 Content-Type: application/json
 Authorization: Bearer <access_token>
 ```
@@ -1633,14 +1702,14 @@ Authorization: Bearer <access_token>
 
 ### 6.5 Delete Property
 
-### `DELETE /properties/:id`
+### `DELETE /v1/properties/:id`
 
 Soft-deletes (archives) the authenticated user's own property. **JWT required.**
 
 **Request:**
 
 ```
-DELETE http://localhost:3000/properties/uuid-of-property
+DELETE http://localhost:3000/v1/properties/uuid-of-property
 Authorization: Bearer <access_token>
 ```
 
@@ -1683,18 +1752,209 @@ Authorization: Bearer <access_token>
 }
 ```
 
+**Error — Cannot archive draft (400):**
+
+```json
+{
+  "success": false,
+  "message": "Only active or sold properties can be archived",
+  "error_code": 1522,
+  "data": null
+}
+```
+
 ---
 
-### 6.6 Add Media
+### 6.6 My Properties
 
-### `POST /properties/:id/media`
+### `GET /v1/properties/my`
+
+Returns all properties owned by the authenticated user across **all statuses** (draft, pending, active, archived, sold). **JWT required.**
+
+**Query Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|:--------:|-------------|
+| `status` | `draft`, `pending`, `active`, `archived`, `sold` | No | Filter by property status |
+| `type` | `residential`, `commercial`, `land`, `parking` | No | Property type filter |
+| `listing_type` | `sale`, `rent` | No | Listing type filter |
+| `search` | string | No | Case-insensitive search on title/description |
+| `sort_by` | `price_asc`, `price_desc`, `created_at_asc`, `created_at_desc` | No | Sort order (default: `created_at_desc`) |
+| `page` | number | No | Page number (default: 1) |
+| `limit` | number | No | Items per page (default: 20, max: 100) |
+
+**Request:**
+
+```
+GET http://localhost:3000/v1/properties/my
+Authorization: Bearer <access_token>
+```
+
+**Request with filters:**
+
+```
+GET http://localhost:3000/v1/properties/my?status=draft&sort_by=created_at_desc
+GET http://localhost:3000/v1/properties/my?status=active&type=residential
+```
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "items": [
+      {
+        "id": "uuid-of-property",
+        "user_id": "uuid-of-user",
+        "area_id": "uuid-of-area",
+        "title": "Modern 3BR Apartment in Banani",
+        "description": "A beautiful apartment in the heart of Banani.",
+        "type": "residential",
+        "subtype": "apartment",
+        "listing_type": "rent",
+        "price": 85000,
+        "price_currency": "BDT",
+        "area_size": 1650,
+        "area_unit": "sqft",
+        "location_lat": 23.793,
+        "location_lng": 90.405,
+        "address": "Road 11, Banani, Dhaka",
+        "amenities": {
+          "bedrooms": 3,
+          "bathrooms": 3
+        },
+        "status": "draft",
+        "is_verified": false,
+        "virtual_tour_url": null,
+        "view_count": 0,
+        "published_at": null,
+        "created_at": "2026-07-07T10:00:00.000Z",
+        "updated_at": "2026-07-07T10:00:00.000Z",
+        "area": {
+          "id": "uuid-of-area",
+          "name": "Banani",
+          "city": "Dhaka"
+        },
+        "media": [
+          {
+            "id": "uuid-of-media",
+            "url": "https://example.com/photo.jpg",
+            "thumbnail_url": "https://example.com/thumb.jpg"
+          }
+        ],
+        "_count": {
+          "media": 3
+        }
+      }
+    ],
+    "total": 5,
+    "page": 1,
+    "limit": 20,
+    "total_pages": 1
+  }
+}
+```
+
+**Error — Unauthorized (401):**
+
+```json
+{
+  "success": false,
+  "message": "Access token is invalid or has expired",
+  "error_code": 1106,
+  "data": null
+}
+```
+
+---
+
+### 6.7 Submit for Verification
+
+### `POST /v1/properties/:id/submit`
+
+Submits a **draft** property for admin verification. Changes the status from `draft` to `pending`. **JWT required.** The authenticated user must be the property owner.
+
+> **Pre-submission validation:** The endpoint checks that all required fields (`title`, `listing_type`, `price`) are non-empty on the existing property record. If any is missing the submission is rejected — the user must first update the property via [PATCH /v1/properties/:id](#64-update-property) to fill in the required fields.
+
+**Request:**
+
+```
+POST http://localhost:3000/v1/properties/uuid-of-property/submit
+Authorization: Bearer <access_token>
+```
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "id": "uuid-of-property"
+  }
+}
+```
+
+**Error — Not found (404):**
+
+```json
+{
+  "success": false,
+  "message": "Property not found",
+  "error_code": 1500,
+  "data": null
+}
+```
+
+**Error — Not a draft (400):**
+
+```json
+{
+  "success": false,
+  "message": "Only draft properties can be submitted for review",
+  "error_code": 1521,
+  "data": null
+}
+```
+
+**Error — Missing required fields (400):**
+
+```json
+{
+  "success": false,
+  "message": "Only draft properties can be submitted for review",
+  "error_code": 1521,
+  "data": null
+}
+```
+
+> This error is also returned when required fields (`title`, `listing_type`, `price`) are missing. Update the property first, then submit.
+
+**Error — Forbidden (403):**
+
+```json
+{
+  "success": false,
+  "message": "You do not have permission to submit this property",
+  "error_code": 1003,
+  "data": null
+}
+```
+
+---
+
+### 6.8 Add Media
+
+### `POST /v1/properties/:id/media`
 
 Adds a media item (image/video) to the authenticated user's property. **JWT required.**
 
 **Request:**
 
 ```
-POST http://localhost:3000/properties/uuid-of-property/media
+POST http://localhost:3000/v1/properties/uuid-of-property/media
 Content-Type: application/json
 Authorization: Bearer <access_token>
 ```
@@ -1756,16 +2016,16 @@ Authorization: Bearer <access_token>
 
 ---
 
-### 6.7 Remove Media
+### 6.9 Remove Media
 
-### `DELETE /properties/media/:mediaId`
+### `DELETE /v1/properties/media/:mediaId`
 
 Removes a media item from the authenticated user's property. **JWT required.**
 
 **Request:**
 
 ```
-DELETE http://localhost:3000/properties/media/uuid-of-media
+DELETE http://localhost:3000/v1/properties/media/uuid-of-media
 Authorization: Bearer <access_token>
 ```
 
@@ -1803,16 +2063,16 @@ Authorization: Bearer <access_token>
 
 ---
 
-### 6.8 Admin: List All Properties
+### 6.10 Admin: List All Properties
 
-### `GET /properties/admin`
+### `GET /v1/properties/admin`
 
 Returns all properties across all statuses (including draft, archived), with full admin-level details. Requires `manage_properties` permission.
 
 **Request:**
 
 ```
-GET http://localhost:3000/properties/admin
+GET http://localhost:3000/v1/properties/admin
 Authorization: Bearer <access_token>
 ```
 
@@ -1824,16 +2084,16 @@ Authorization: Bearer <access_token>
 
 ---
 
-### 6.9 Admin: Update Property
+### 6.11 Admin: Update Property
 
-### `PATCH /properties/:id/admin`
+### `PATCH /v1/properties/:id/admin`
 
 Updates any property. Admin can also change the `status` field. Requires `manage_properties` permission.
 
 **Request:**
 
 ```
-PATCH http://localhost:3000/properties/uuid-of-property/admin
+PATCH http://localhost:3000/v1/properties/uuid-of-property/admin
 Content-Type: application/json
 Authorization: Bearer <access_token>
 ```
@@ -1851,16 +2111,16 @@ Authorization: Bearer <access_token>
 
 ---
 
-### 6.10 Admin: Hard Delete Property
+### 6.12 Admin: Hard Delete Property
 
-### `DELETE /properties/:id/admin`
+### `DELETE /v1/properties/:id/admin`
 
 Permanently deletes a property from the database. Requires `manage_properties` permission.
 
 **Request:**
 
 ```
-DELETE http://localhost:3000/properties/uuid-of-property/admin
+DELETE http://localhost:3000/v1/properties/uuid-of-property/admin
 Authorization: Bearer <access_token>
 ```
 
@@ -1916,28 +2176,34 @@ Authorization: Bearer <access_token>
 | 1501 | Property access denied | 403 |
 | 1503 | Invalid amenities structure | 400 |
 | 1510 | Media not found | 404 |
+| 1520 | Invalid status transition | 400 |
+| 1521 | Only draft properties can be submitted | 400 |
+| 1522 | Only active/sold properties can be archived | 400 |
 
 ---
 
 ## Suggested Testing Flow
 
 1. **Start** — Hit `GET /` to confirm the server is running
-2. **Register** — Create an account via `POST /auth/register`
-3. **Login** — Get tokens via `POST /auth/login`
-4. **Get Profile** — Test your JWT with `GET /auth/me`
-5. **List Users** — See all users via `GET /users`
-6. **Refresh** — Rotate your tokens via `POST /auth/refresh`
-7. **Logout** — Revoke a refresh token via `POST /auth/logout`
-8. **List Areas** — View all seeded areas via `GET /areas` (no auth needed)
-9. **Get Area Details** — View a single area via `GET /areas/:id` (no auth needed)
-10. **Get Area Children** — View sub-areas via `GET /areas/:id/children` (no auth needed)
-11. **List Properties** — View all active property listings via `GET /properties` (no auth needed)
-12. **Get Property Details** — View a single property via `GET /properties/:id` (no auth needed)
-13. **Create Property** — Create a new draft property via `POST /properties` (JWT required)
-14. **Update Property** — Update your own property via `PATCH /properties/:id` (JWT required)
-15. **Add Media** — Attach images/videos to your property via `POST /properties/:id/media` (JWT required)
-16. **Submit Verification** — Submit a property for verification via `POST /properties/:id/verification` (JWT required)
-17. **Delete Property** — Soft-delete your property via `DELETE /properties/:id` (JWT required)
+2. **Register** — Create an account via `POST /v1/auth/register`
+3. **Login** — Get tokens via `POST /v1/auth/login`
+4. **Get Profile** — Test your JWT with `GET /v1/auth/me`
+5. **List Users** — See all users via `GET /v1/users`
+6. **Refresh** — Rotate your tokens via `POST /v1/auth/refresh`
+7. **Logout** — Revoke a refresh token via `POST /v1/auth/logout`
+8. **List Areas** — View all seeded areas via `GET /v1/areas` (no auth needed)
+9. **Get Area Details** — View a single area via `GET /v1/areas/:id` (no auth needed)
+10. **Get Area Children** — View sub-areas via `GET /v1/areas/:id/children` (no auth needed)
+11. **List Properties** — View all active property listings via `GET /v1/properties` (no auth needed)
+12. **Get Property Details** — View a single property via `GET /v1/properties/:id` (no auth needed)
+13. **Create Property (Draft)** — Create a property with **some** required fields missing via `POST /v1/properties` → expect `status: "draft"` (JWT required)
+14. **Create Property (Pending)** — Create a property with **all** required fields (`title`, `type`, `listing_type`, `price`) via `POST /v1/properties` → expect `status: "pending"` (JWT required)
+15. **My Properties** — View all your properties across all statuses via `GET /v1/properties/my` (JWT required)
+16. **Filter My Properties** — Filter your properties by status via `GET /v1/properties/my?status=draft` (JWT required)
+17. **Update Property** — Update your own draft property via `PATCH /v1/properties/:id` to fill in missing required fields (JWT required)
+18. **Submit for Verification** — Submit a completed draft property for review via `POST /v1/properties/:id/submit` (JWT required)
+19. **Add Media** — Attach images/videos to your property via `POST /v1/properties/:id/media` (JWT required)
+20. **Archive Property** — Archive an active/sold property via `DELETE /v1/properties/:id` (JWT required)
 
 > **For Roles & Permissions**, you'll need to insert roles/permissions directly into the database first (there's no seed data). Use raw SQL or a Prisma script to create roles and permissions before testing those endpoints.
 >

@@ -1,6 +1,6 @@
 $kind: http-request
 description: Attaches a permission to a role. Requires manage_roles permission.
-url: http://localhost:3000/roles/{{roleId}}/permissions
+url: http://localhost:3000/v1/roles/{{roleId}}/permissions
 method: POST
 headers:
   Content-Type: application/json

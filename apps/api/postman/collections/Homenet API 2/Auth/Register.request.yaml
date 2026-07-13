@@ -1,6 +1,6 @@
 $kind: http-request
 description: "Creates a new user account with email/password. Optional field: avatar_url."
-url: http://localhost:3000/auth/register
+url: http://localhost:3000/v1/auth/register
 method: POST
 headers:
   Content-Type: application/json

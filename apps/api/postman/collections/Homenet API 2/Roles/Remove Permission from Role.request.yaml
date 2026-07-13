@@ -1,6 +1,6 @@
 $kind: http-request
 description: Detaches a permission from a role. Requires manage_roles permission.
-url: http://localhost:3000/roles/{{roleId}}/permissions/{{permissionId}}
+url: http://localhost:3000/v1/roles/{{roleId}}/permissions/{{permissionId}}
 method: DELETE
 headers:
   Authorization: Bearer <access_token>

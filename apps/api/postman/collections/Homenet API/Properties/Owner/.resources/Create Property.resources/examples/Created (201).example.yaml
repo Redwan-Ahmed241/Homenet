@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: http://localhost:3000/properties
+  url: http://localhost:3000/v1/properties
   method: POST
   headers:
     Content-Type: application/json

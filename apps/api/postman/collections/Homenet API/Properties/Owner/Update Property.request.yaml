@@ -1,6 +1,6 @@
 $kind: http-request
 description: Updates authenticated user's own property. All fields optional. JWT required.
-url: http://localhost:3000/properties/{{propertyId}}
+url: http://localhost:3000/v1/properties/{{propertyId}}
 method: PATCH
 headers:
   Content-Type: application/json

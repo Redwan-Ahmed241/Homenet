@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: http://localhost:3000/roles/revoke
+  url: http://localhost:3000/v1/roles/revoke
   method: DELETE
   headers:
     Content-Type: application/json

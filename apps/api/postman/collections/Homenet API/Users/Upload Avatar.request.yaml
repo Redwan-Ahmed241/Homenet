@@ -1,0 +1,19 @@
+$kind: http-request
+name: Upload Avatar
+description: 'Upload or update a user''s avatar image. Sends a multipart/form-data POST with the image file. JWT required.'
+url: '{{base_url}}/v1/users/{{userId}}/avatar'
+method: POST
+headers:
+  Authorization: 'Bearer {{accessToken}}'
+body:
+  type: formdata
+  content:
+    - key: file
+      src: ''
+      type: file
+      description: 'The avatar image file to upload (JPEG, PNG, etc.)'
+    - key: folder
+      value: ''
+      type: text
+      description: 'Optional folder name for the avatar (defaults to user ID)'
+order: 3000

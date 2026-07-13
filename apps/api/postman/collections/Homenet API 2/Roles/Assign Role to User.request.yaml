@@ -1,6 +1,6 @@
 $kind: http-request
 description: Assigns a role to a user. Requires manage_roles permission.
-url: http://localhost:3000/roles/assign
+url: http://localhost:3000/v1/roles/assign
 method: POST
 headers:
   Content-Type: application/json

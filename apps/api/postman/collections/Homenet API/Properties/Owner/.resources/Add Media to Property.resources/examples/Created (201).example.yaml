@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: http://localhost:3000/properties/{{propertyId}}/media
+  url: http://localhost:3000/v1/properties/{{propertyId}}/media
   method: POST
   headers:
     Content-Type: application/json

@@ -1,7 +1,7 @@
 $kind: http-request
 description: "Creates a new area. Requires manage_areas permission. Optional
   fields: parent_area_id, city, boundary (WKT), centroid (WKT)."
-url: http://localhost:3000/areas
+url: http://localhost:3000/v1/areas
 method: POST
 headers:
   Content-Type: application/json

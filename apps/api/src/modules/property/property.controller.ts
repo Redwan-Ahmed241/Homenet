@@ -23,7 +23,7 @@ import { Permissions } from '../../common/decorators/permissions.decorator.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../../common/decorators/current-user.decorator.js';
 
-@Controller('properties')
+@Controller('v1/properties')
 @Throttle({ default: { limit: 60, ttl: 60000 } })
 export class PropertyController {
   constructor(private readonly propertyService: PropertyService) {}
@@ -42,6 +42,16 @@ export class PropertyController {
   @Get('admin')
   findAllAdmin(@Query() query: PropertyQueryDto) {
     return this.propertyService.findAllAdmin(query);
+  }
+
+  // ── User: My Properties (static route before @Get(':id')) ─
+
+  @Get('my')
+  findMyProperties(
+    @Query() query: PropertyQueryDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.propertyService.findUserProperties(query, user.id);
   }
 
   @Public()
@@ -69,6 +79,15 @@ export class PropertyController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.propertyService.update(id, dto, user.id, false);
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Post(':id/submit')
+  submitForVerification(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.propertyService.submitForVerification(id, user.id);
   }
 
   @Throttle({ default: { limit: 10, ttl: 60000 } })

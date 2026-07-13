@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: http://localhost:3000/auth/login
+  url: http://localhost:3000/v1/auth/login
   method: POST
   headers:
     Content-Type: application/json

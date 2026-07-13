@@ -1,6 +1,6 @@
 $kind: http-request
 description: Revokes the provided refresh token. JWT required.
-url: "{{base_url}}/auth/logout"
+url: "{{base_url}}/v1/auth/logout"
 method: POST
 headers:
   Content-Type: application/json

@@ -1,7 +1,7 @@
 $kind: http-request
 description: Adds a media item (image/video) to the authenticated user's
   property. JWT required.
-url: http://localhost:3000/properties/{{propertyId}}/media
+url: http://localhost:3000/v1/properties/{{propertyId}}/media
 method: POST
 headers:
   Content-Type: application/json

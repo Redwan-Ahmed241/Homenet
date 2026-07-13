@@ -1,6 +1,6 @@
 $kind: http-request
 description: Returns a single role with its permissions. Requires view_roles permission.
-url: http://localhost:3000/roles/{{roleId}}
+url: http://localhost:3000/v1/roles/{{roleId}}
 method: GET
 headers:
   Authorization: Bearer <access_token>

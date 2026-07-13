@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -11,7 +11,7 @@ import { UpdateUserDto } from './dto/update-user.dto.js';
 
 @ApiTags('Users')
 @ApiBearerAuth()
-@Controller('users')
+@Controller('v1/users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 

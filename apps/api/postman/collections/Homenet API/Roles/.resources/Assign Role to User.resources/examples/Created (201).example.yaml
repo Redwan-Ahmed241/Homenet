@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: http://localhost:3000/roles/assign
+  url: http://localhost:3000/v1/roles/assign
   method: POST
   headers:
     Content-Type: application/json

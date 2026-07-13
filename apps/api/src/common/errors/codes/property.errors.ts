@@ -43,4 +43,19 @@ export const PROPERTY_ERRORS = {
     message: 'Failed to upload media to storage',
     httpStatus: 500,
   },
+  PROPERTY_INVALID_STATUS_TRANSITION: {
+    code: 1520,
+    message: 'Cannot transition property to the requested status',
+    httpStatus: 400,
+  },
+  PROPERTY_CANNOT_SUBMIT: {
+    code: 1521,
+    message: 'Only draft properties can be submitted for review',
+    httpStatus: 400,
+  },
+  PROPERTY_CANNOT_ARCHIVE: {
+    code: 1522,
+    message: 'Only active or sold properties can be archived',
+    httpStatus: 400,
+  },
 } as const satisfies Record<string, ErrorDefinition>;

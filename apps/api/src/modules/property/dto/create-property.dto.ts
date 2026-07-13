@@ -17,33 +17,34 @@ export class CreatePropertyDto {
   @IsNotEmpty()
   area_id!: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(255)
   @Transform(({ value }) => (typeof value === 'string' ? value.trim() : value))
-  title!: string;
+  title?: string;
 
   @IsOptional()
   @IsString()
   @MaxLength(5000)
   description?: string;
 
+  @IsOptional()
   @IsEnum(PropertyType)
-  @IsNotEmpty()
-  type!: PropertyType;
+  type?: PropertyType;
 
   @IsOptional()
   @IsString()
   subtype?: string;
 
+  @IsOptional()
   @IsEnum(ListingType)
-  @IsNotEmpty()
-  listing_type!: ListingType;
+  listing_type?: ListingType;
 
+  @IsOptional()
   @IsNumber()
   @Min(0)
   @Type(() => Number)
-  price!: number;
+  price?: number;
 
   @IsOptional()
   @IsString()

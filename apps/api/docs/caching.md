@@ -113,8 +113,8 @@ Below is a comprehensive breakdown of the API endpoints, specifying whether they
 
 | Endpoint | Method | Cached? | Cache Key Pattern | TTL | Invalidation Triggers |
 | :--- | :---: | :---: | :--- | :--- | :--- |
-| `/auth/me` | GET | Yes | `auth:profile:{userId}`| 10 min | N/A (Relies on TTL) |
-| `/auth/register` | POST | No | N/A | N/A | N/A |
-| `/auth/login` | POST | No | N/A | N/A | N/A |
-| `/auth/refresh` | POST | No | N/A | N/A | N/A |
-| `/auth/logout` | POST | No | N/A | N/A | N/A |
+| `/v1/auth/me` | GET | Yes | `auth:profile:{userId}`| 10 min | N/A (Relies on TTL) |
+| `/v1/auth/register` | POST | No | N/A | N/A | N/A |
+| `/v1/auth/login` | POST | No | N/A | N/A | N/A |
+| `/v1/auth/refresh` | POST | No | N/A | N/A | N/A |
+| `/v1/auth/logout` | POST | No | N/A | N/A | N/A |

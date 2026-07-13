@@ -6,7 +6,7 @@ The **Homenet API** is built with **NestJS** (v11) following the framework's mod
 
 | Module | Purpose | Key Files |
 |---|---|---|
-| **AuthModule** | Handles user authentication, JWT issuance, login/refresh flows. | `src/modules/auth/*` |
+| **AuthModule** | Handles user authentication, JWT issuance, login/refresh flows. | `src/modules/v1/auth/*` |
 | **UserModule** | CRUD operations for user profiles. | `src/modules/user/*` |
 | **RoleModule** | Role‑based access control (RBAC) with permissions. | `src/modules/role/*` |
 | **PrismaModule** | Prisma ORM integration, provides `PrismaService` for DB access. | `src/config/prisma/*` |

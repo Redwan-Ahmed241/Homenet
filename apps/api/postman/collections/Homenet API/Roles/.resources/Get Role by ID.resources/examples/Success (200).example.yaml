@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: http://localhost:3000/roles/{{roleId}}
+  url: http://localhost:3000/v1/roles/{{roleId}}
   method: GET
   headers:
     Authorization: Bearer <access_token>

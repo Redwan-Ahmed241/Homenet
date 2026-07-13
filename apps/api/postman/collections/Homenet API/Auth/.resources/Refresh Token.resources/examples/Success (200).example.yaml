@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: http://localhost:3000/auth/refresh
+  url: http://localhost:3000/v1/auth/refresh
   method: POST
   headers:
     Content-Type: application/json

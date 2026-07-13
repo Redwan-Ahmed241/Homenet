@@ -1,6 +1,6 @@
 $kind: http-request
 description: Exchange a valid refresh token for a new token pair (rotation).
-url: http://localhost:3000/auth/refresh
+url: http://localhost:3000/v1/auth/refresh
 method: POST
 headers:
   Content-Type: application/json

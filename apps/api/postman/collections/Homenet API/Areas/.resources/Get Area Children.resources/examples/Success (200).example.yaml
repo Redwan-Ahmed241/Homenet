@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: http://localhost:3000/areas/{{areaId}}/children
+  url: http://localhost:3000/v1/areas/{{areaId}}/children
   method: GET
   pathVariables:
     areaId: uuid-of-area

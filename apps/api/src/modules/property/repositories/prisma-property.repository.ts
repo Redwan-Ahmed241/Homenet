@@ -236,10 +236,10 @@ export class PrismaPropertyRepository implements IPropertyRepository {
     });
   }
 
-  async findById(id: string): Promise<{ id: string; user_id: string; type: string; status: string } | null> {
+  async findById(id: string): Promise<{ id: string; user_id: string; type: string; status: string; title: string; listing_type: string; price: number } | null> {
     const property = await this.prisma.property.findUnique({
       where: { id },
-      select: { id: true, user_id: true, type: true, status: true },
+      select: { id: true, user_id: true, type: true, status: true, title: true, listing_type: true, price: true },
     });
 
     return property;
@@ -262,6 +262,7 @@ export class PrismaPropertyRepository implements IPropertyRepository {
     address?: string;
     amenities?: any;
     virtual_tour_url?: string;
+    status?: string;
   }): Promise<{ id: string; title: string }> {
     const property = await this.prisma.property.create({
       data: {
@@ -281,7 +282,7 @@ export class PrismaPropertyRepository implements IPropertyRepository {
         address: data.address,
         amenities: data.amenities ?? Prisma.DbNull,
         virtual_tour_url: data.virtual_tour_url,
-        status: 'draft',
+        status: (data.status as any) ?? 'draft',
       },
       select: { id: true, title: true },
     });
@@ -507,6 +508,44 @@ export class PrismaPropertyRepository implements IPropertyRepository {
           media: {
             where: { media_type: 'image' },
             orderBy: { display_order: 'asc' },
+            take: 1,
+            select: { id: true, url: true, thumbnail_url: true },
+          },
+          _count: { select: { media: true } },
+        } as any,
+        skip,
+        take: query.limit,
+        orderBy,
+      }),
+      this.prisma.property.count({ where }),
+    ]);
+
+    return {
+      items: items as unknown as PropertyListItem[],
+      total,
+      page: query.page,
+      limit: query.limit,
+      total_pages: Math.ceil(total / query.limit),
+    };
+  }
+
+  async findUserProperties(query: PropertyQueryParams): Promise<PaginatedResult<PropertyListItem>> {
+    const where: Record<string, any> = {
+      ...this.buildWhereFromQuery(query),
+      user_id: query.userId,
+    };
+    const orderBy = this.buildOrderBy(query.sort_by);
+    const skip = (query.page - 1) * query.limit;
+
+    const [items, total] = await Promise.all([
+      this.prisma.property.findMany({
+        where,
+        select: {
+          ...propertyPublicSelect,
+          area: { select: { id: true, name: true, city: true } },
+          media: {
+            where: { media_type: 'image' as const },
+            orderBy: { display_order: 'asc' as const },
             take: 1,
             select: { id: true, url: true, thumbnail_url: true },
           },

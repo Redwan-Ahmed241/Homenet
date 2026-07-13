@@ -1,6 +1,6 @@
 $kind: http-example
 request:
-  url: http://localhost:3000/areas/{{areaId}}
+  url: http://localhost:3000/v1/areas/{{areaId}}
   method: PATCH
   headers:
     Content-Type: application/json
