@@ -5,7 +5,7 @@ CREATE TYPE "PropertyType" AS ENUM ('residential', 'commercial', 'land', 'parkin
 CREATE TYPE "ListingType" AS ENUM ('sale', 'rent');
 
 -- CreateEnum
-CREATE TYPE "PropertyStatus" AS ENUM ('draft', 'active', 'sold', 'archived');
+CREATE TYPE "PropertyStatus" AS ENUM ('draft', 'active', 'pending', 'sold', 'archived');
 
 -- CreateEnum
 CREATE TYPE "MediaType" AS ENUM ('image', 'video');
@@ -75,3 +75,4 @@ ALTER TABLE "Property" ADD CONSTRAINT "Property_area_id_fkey" FOREIGN KEY ("area
 
 -- AddForeignKey
 ALTER TABLE "PropertyMedia" ADD CONSTRAINT "PropertyMedia_property_id_fkey" FOREIGN KEY ("property_id") REFERENCES "Property"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+

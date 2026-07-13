@@ -1,6 +1,10 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseInterceptors, UploadedFile } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 import {
   ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -8,6 +12,8 @@ import {
 } from '@nestjs/swagger';
 import { UserService } from './user.service.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
+import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import type { AuthenticatedUser } from '../../common/decorators/current-user.decorator.js';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -23,6 +29,36 @@ export class UserController {
   })
   findAll() {
     return this.userService.findAll();
+  }
+
+  @Post('avatar')
+  @UseInterceptors(FileInterceptor('file', { storage: memoryStorage() }))
+  @ApiOperation({ summary: 'Upload or replace user avatar' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        file: { type: 'string', format: 'binary' },
+      },
+    },
+  })
+  @ApiResponse({ status: 201, description: 'Avatar uploaded successfully' })
+  @ApiResponse({ status: 400, description: 'Invalid file type or size' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  uploadAvatar(
+    @UploadedFile() file: Express.Multer.File,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.userService.uploadAvatar(user.id, file);
+  }
+
+  @Delete('avatar')
+  @ApiOperation({ summary: 'Remove user avatar' })
+  @ApiResponse({ status: 200, description: 'Avatar removed successfully' })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  removeAvatar(@CurrentUser() user: AuthenticatedUser) {
+    return this.userService.removeAvatar(user.id);
   }
 
   @Get(':id')

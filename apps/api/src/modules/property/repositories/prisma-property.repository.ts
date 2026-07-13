@@ -390,7 +390,6 @@ export class PrismaPropertyRepository implements IPropertyRepository {
     public_id: string;
     thumbnail_url?: string | null;
     display_order: number;
-    analysis?: Record<string, any>;
   }): Promise<PropertyMedia> {
     const media = await this.prisma.propertyMedia.create({
       data: {
@@ -400,7 +399,6 @@ export class PrismaPropertyRepository implements IPropertyRepository {
         public_id: data.public_id,
         thumbnail_url: data.thumbnail_url,
         display_order: data.display_order,
-        analysis: data.analysis ?? undefined,
       },
     });
 

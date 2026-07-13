@@ -129,7 +129,6 @@ export interface IPropertyRepository {
     public_id: string;
     thumbnail_url?: string | null;
     display_order: number;
-    analysis?: Record<string, any>;
   }): Promise<PropertyMedia>;
   findLastMediaOrder(propertyId: string): Promise<number | null>;
   findMediaById(mediaId: string): Promise<{

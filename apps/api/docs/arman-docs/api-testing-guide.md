@@ -38,6 +38,8 @@ Error responses follow this shape:
 3. [Users](#3-users)
    - [List All Users](#31-list-all-users)
    - [Get User by ID](#32-get-user-by-id)
+   - [Upload Avatar](#33-upload-avatar)
+   - [Remove Avatar](#34-remove-avatar)
 4. [Roles & Permissions](#4-roles--permissions)
    - [List All Roles](#41-list-all-roles)
    - [Get Role by ID](#42-get-role-by-id)
@@ -443,6 +445,137 @@ Authorization: Bearer <access_token>
   "success": false,
   "message": "The requested resource was not found",
   "error_code": 1002,
+  "data": null
+}
+```
+
+---
+
+### 3.3 Upload Avatar
+
+### `POST /users/avatar`
+
+Uploads or replaces the authenticated user's avatar image. The file is uploaded to Cloudinary, and the URL is stored on the user profile. **JWT required.**
+
+> **Phase 1 limitation:** Only the Cloudinary URL is stored, not the `public_id`. Old avatar files remain in Cloudinary when replaced. Manual cleanup may be needed.
+
+**Request:**
+
+```
+POST http://localhost:3000/users/avatar
+Content-Type: multipart/form-data
+Authorization: Bearer <access_token>
+```
+
+**Form data fields:**
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `file` | File | Yes | Image (JPEG, PNG, or WebP), max 10 MB |
+
+**Response (201):**
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "id": "uuid-of-user",
+    "full_name": "John Doe",
+    "avatar_url": "https://res.cloudinary.com/.../image/upload/v123/homenet/users/uuid/avatar/uuid.jpg",
+    "created_at": "2026-06-30T10:00:00.000Z",
+    "updated_at": "2026-07-13T12:00:00.000Z",
+    "auth_identities": [
+      {
+        "provider": "LOCAL",
+        "email": "john@example.com",
+        "phone": null,
+        "verified_at": null
+      }
+    ]
+  }
+}
+```
+
+**Error — Invalid file type (400):**
+
+```json
+{
+  "success": false,
+  "message": "Invalid file type. Allowed types: JPEG, PNG, WebP",
+  "error_code": 1210,
+  "data": null
+}
+```
+
+**Error — File too large (400):**
+
+```json
+{
+  "success": false,
+  "message": "File size exceeds the maximum allowed limit",
+  "error_code": 1211,
+  "data": null
+}
+```
+
+**Error — User not found (404):**
+
+```json
+{
+  "success": false,
+  "message": "User not found",
+  "error_code": 1200,
+  "data": null
+}
+```
+
+---
+
+### 3.4 Remove Avatar
+
+### `DELETE /users/avatar`
+
+Removes the authenticated user's avatar URL from their profile. The Cloudinary file is **not** automatically deleted (Phase 1 limitation — manual cleanup may be needed). **JWT required.**
+
+**Request:**
+
+```
+DELETE http://localhost:3000/users/avatar
+Authorization: Bearer <access_token>
+```
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "id": "uuid-of-user",
+    "full_name": "John Doe",
+    "avatar_url": null,
+    "created_at": "2026-06-30T10:00:00.000Z",
+    "updated_at": "2026-07-13T12:00:00.000Z",
+    "auth_identities": [
+      {
+        "provider": "LOCAL",
+        "email": "john@example.com",
+        "phone": null,
+        "verified_at": null
+      }
+    ]
+  }
+}
+```
+
+**Error — No avatar / User not found (404):**
+
+```json
+{
+  "success": false,
+  "message": "User not found",
+  "error_code": 1200,
   "data": null
 }
 ```
@@ -1253,6 +1386,9 @@ Authorization: Bearer <access_token>
 | 1106 | JWT invalid or expired | 401 |
 | 1107 | Authenticated user not found | 401 |
 | 1200 | User not found | 404 |
+| 1210 | Invalid avatar file type | 400 |
+| 1211 | Avatar file too large | 400 |
+| 1212 | Avatar upload failed | 500 |
 | 1300 | Role not found | 404 |
 | 1301 | Role already assigned | 409 |
 | 1302 | Permission not found | 404 |
@@ -1281,15 +1417,21 @@ Authorization: Bearer <access_token>
 5. **List Users** — See all users via `GET /users`
 6. **Refresh** — Rotate your tokens via `POST /auth/refresh`
 7. **Logout** — Revoke a refresh token via `POST /auth/logout`
-8. **List Areas** — View all seeded areas via `GET /areas` (no auth needed)
-9. **Get Area Details** — View a single area via `GET /areas/:id` (no auth needed)
-10. **Get Area Children** — View sub-areas via `GET /areas/:id/children` (no auth needed)
-11. **Add Property Media** — Upload an image to a property via `POST /properties/:id/media` (multipart form-data with `file`, `media_type`, `display_order`)
-12. **Add Another Image** — Upload a second image with `display_order: 1` to the same property
-13. **Delete Property Media** — Remove a media item via `DELETE /properties/media/:mediaId` (verifies Cloudinary cleanup)
-14. **Upload Invalid File Type** — Try uploading a `.pdf` file (expects error code 1511)
-15. **Upload Oversized File** — Try uploading a file > 10 MB (expects error code 1512)
-16. **Unauthorized Media Access** — Try uploading/deleting media as a non-owner (expects 403)
+8. **Upload Avatar** — Upload a `.jpg` image via `POST /users/avatar` (multipart form-data with `file` field). Verify `avatar_url` is populated in the response.
+9. **Replace Avatar** — Upload a different image to the same endpoint. Confirm `avatar_url` changes to a new URL. (Old file stays in Cloudinary — Phase 1 limitation.)
+10. **Remove Avatar** — Delete the avatar via `DELETE /users/avatar`. Verify `avatar_url` is `null` in response.
+11. **Remove Again (No Avatar)** — Hit `DELETE /users/avatar` again. Expects error code `1200` (User not found / no avatar).
+12. **Upload Invalid File Type** — Try uploading a `.pdf` file to `POST /users/avatar`. Expects error code `1210`.
+13. **Upload Without File** — Hit `POST /users/avatar` with no file attached. Expects `400` bad request.
+14. **List Areas** — View all seeded areas via `GET /areas` (no auth needed)
+15. **Get Area Details** — View a single area via `GET /areas/:id` (no auth needed)
+16. **Get Area Children** — View sub-areas via `GET /areas/:id/children` (no auth needed)
+17. **Add Property Media** — Upload an image to a property via `POST /properties/:id/media` (multipart form-data with `file`, `media_type`, `display_order`)
+18. **Add Another Image** — Upload a second image with `display_order: 1` to the same property
+19. **Delete Property Media** — Remove a media item via `DELETE /properties/media/:mediaId` (verifies Cloudinary cleanup)
+20. **Upload Invalid File Type** — Try uploading a `.pdf` file (expects error code 1511)
+21. **Upload Oversized File** — Try uploading a file > 10 MB (expects error code 1512)
+22. **Unauthorized Media Access** — Try uploading/deleting media as a non-owner (expects 403)
 
 > **For Roles & Permissions**, you'll need to insert roles/permissions directly into the database first (there's no seed data). Use raw SQL or a Prisma script to create roles and permissions before testing those endpoints.
 >
