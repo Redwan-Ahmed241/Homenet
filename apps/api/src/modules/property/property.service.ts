@@ -370,7 +370,6 @@ export class PropertyService {
       public_id: uploaded.public_id,
       thumbnail_url: uploaded.thumbnail_url ?? undefined,
       display_order: displayOrder,
-      analysis: {},
     });
   }catch(dbError){
     // DB save failed — clean up the orphaned Cloudinary file immediately

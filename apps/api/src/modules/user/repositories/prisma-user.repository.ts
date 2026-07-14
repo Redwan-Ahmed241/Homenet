@@ -3,7 +3,7 @@ import { PrismaService } from '../../../config/prisma/prisma.service.js';
 import { LoggerService } from '../../../common/logger/logger.service.js';
 import { handlePrismaError } from '../../../common/database/prisma-error-handler.js';
 import { USER_ERRORS } from '../../../common/errors/error-codes.js';
-import type { IUserRepository, UserProfile, UserExists } from '../interfaces/user-repository.interface.js';
+import type { IUserRepository, UserProfile, UserExists, UserAssetRecord } from '../interfaces/user-repository.interface.js';
 
 const userSelect = {
   id: true,
@@ -139,6 +139,54 @@ export class PrismaUserRepository implements IUserRepository {
       });
       handlePrismaError(error, {
         modelName: 'User',
+        notFoundError: USER_ERRORS.USER_NOT_FOUND,
+      });
+    }
+  }
+
+  async createUserAsset(data: { user_id: string; asset_id: string; source: string }): Promise<UserAssetRecord> {
+    const asset = await this.prisma.userAsset.create({
+      data: {
+        user_id: data.user_id,
+        asset_id: data.asset_id,
+        source: data.source as any,
+      },
+    });
+
+    this.logger.debug(`Created user asset: ${asset.id} for user: ${data.user_id}`, {
+      fileName: 'prisma-user.repository.ts',
+      functionName: 'createUserAsset',
+      lineNumber: 138,
+    });
+
+    return asset as unknown as UserAssetRecord;
+  }
+
+  async findUserAssetByUserAndSource(userId: string, source: string): Promise<UserAssetRecord | null> {
+    const asset = await this.prisma.userAsset.findFirst({
+      where: { user_id: userId, source: source as any },
+    });
+
+    return asset as unknown as UserAssetRecord | null;
+  }
+
+  async deleteUserAsset(id: string): Promise<void> {
+    try {
+      await this.prisma.userAsset.delete({ where: { id } });
+
+      this.logger.debug(`Deleted user asset: ${id}`, {
+        fileName: 'prisma-user.repository.ts',
+        functionName: 'deleteUserAsset',
+        lineNumber: 158,
+      });
+    } catch (error) {
+      this.logger.error(`Failed to delete user asset: ${id}`, {
+        fileName: 'prisma-user.repository.ts',
+        functionName: 'deleteUserAsset',
+        lineNumber: 164,
+      });
+      handlePrismaError(error, {
+        modelName: 'UserAsset',
         notFoundError: USER_ERRORS.USER_NOT_FOUND,
       });
     }
