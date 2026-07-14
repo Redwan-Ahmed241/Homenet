@@ -1,12 +1,9 @@
--- CreateEnum
-CREATE TYPE "UserAssetSource" AS ENUM ('AVATAR', 'NID');
-
 -- CreateTable
 CREATE TABLE "UserAsset" (
     "id" TEXT NOT NULL,
     "user_id" TEXT NOT NULL,
     "asset_id" TEXT NOT NULL,
-    "source" "UserAssetSource" NOT NULL,
+    "source" TEXT NOT NULL,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updated_at" TIMESTAMP(3) NOT NULL,
 
