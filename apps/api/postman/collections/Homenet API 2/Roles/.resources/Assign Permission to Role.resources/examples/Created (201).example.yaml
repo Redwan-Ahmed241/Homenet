@@ -1,0 +1,20 @@
+$kind: http-example
+request:
+  url: ""
+  method: GET
+response:
+  statusCode: 201
+  statusText: OK
+  body:
+    type: text
+    content: |-
+      {
+        "success": true,
+        "message": "OK",
+        "data": {
+          "id": "uuid-of-role-permission",
+          "role_id": "uuid-of-role",
+          "permission_id": "uuid-of-permission"
+        }
+      }
+order: 1000

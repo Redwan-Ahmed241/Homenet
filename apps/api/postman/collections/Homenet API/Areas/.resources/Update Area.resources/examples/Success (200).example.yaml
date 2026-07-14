@@ -1,0 +1,35 @@
+$kind: http-example
+request:
+  url: http://localhost:3000/v1/areas/{{areaId}}
+  method: PATCH
+  headers:
+    Content-Type: application/json
+    Authorization: Bearer <access_token>
+  pathVariables:
+    areaId: uuid-of-area
+  body:
+    type: json
+    content: |-
+      {
+        "name": "Updated Area Name",
+        "city": "Chittagong"
+      }
+response:
+  statusCode: 200
+  statusText: OK
+  body:
+    type: text
+    content: |-
+      {
+        "success": true,
+        "message": "OK",
+        "data": {
+          "id": "uuid-of-area",
+          "name": "Updated Area Name",
+          "parent_area_id": null,
+          "city": "Chittagong",
+          "created_at": "2026-07-05T10:00:00.000Z",
+          "updated_at": "2026-07-05T10:00:00.000Z"
+        }
+      }
+order: 1000

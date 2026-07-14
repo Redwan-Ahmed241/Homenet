@@ -1,0 +1,3 @@
+$kind: collection
+description: Health-check endpoint. No authentication required.
+order: 1000

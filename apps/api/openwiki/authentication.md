@@ -3,13 +3,13 @@
 The API uses **JWT** for stateless authentication combined with a **local strategy** for username/password login.
 
 ## Login Flow
-1. **POST /auth/login** – receives `LoginDto` (`email`, `password`).
+1. **POST /v1/auth/login** – receives `LoginDto` (`email`, `password`).
 2. `LocalAuthGuard` (based on `passport-local`) validates credentials via `AuthService.validateUser`.
 3. On success, `AuthService.login` issues a **JWT** signed with `JWT_SECRET` (configured in `.env`).
 4. JWT is returned in the response body and should be included in subsequent requests as `Authorization: Bearer <token>`.
 
 ## Refresh Token
-- **POST /auth/refresh-token** – accepts `RefreshTokenDto` and returns a new JWT.
+- **POST /v1/auth/refresh-token** – accepts `RefreshTokenDto` and returns a new JWT.
 - Refresh tokens are stored and rotated as per `AuthService.refreshToken` implementation.
 
 ## Guard & Decorator
@@ -27,4 +27,4 @@ All auth endpoints are documented via `@nestjs/swagger` decorators in `auth.cont
 - Secure new routes by default – they will be protected by `JwtAuthGuard` unless explicitly marked `@Public()`.
 
 ---
-**Key files**: `src/modules/auth/*`, `src/common/guards/jwt-auth.guard.ts`, `src/common/decorators/public.decorator.ts`
+**Key files**: `src/modules/v1/auth/*`, `src/common/guards/jwt-auth.guard.ts`, `src/common/decorators/public.decorator.ts`

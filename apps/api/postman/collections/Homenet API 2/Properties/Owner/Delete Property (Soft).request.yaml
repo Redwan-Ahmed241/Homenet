@@ -1,0 +1,8 @@
+$kind: http-request
+description: Soft-deletes (archives) the authenticated user's own property. JWT required.
+url: http://localhost:3000/v1/properties/{{propertyId}}
+method: DELETE
+headers:
+  Authorization: Bearer <access_token>
+examples: ./.resources/Delete Property (Soft).resources/examples
+order: 3000

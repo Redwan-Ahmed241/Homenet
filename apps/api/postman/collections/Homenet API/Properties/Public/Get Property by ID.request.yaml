@@ -1,0 +1,9 @@
+$kind: http-request
+description: Returns detailed info for a single active property. Increments view
+  count. No auth required.
+url: http://localhost:3000/v1/properties/{{propertyId}}
+method: GET
+pathVariables:
+  propertyId: uuid-of-property
+examples: ./.resources/Get Property by ID.resources/examples
+order: 2000

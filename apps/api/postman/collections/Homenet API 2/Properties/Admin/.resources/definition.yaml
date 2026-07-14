@@ -1,0 +1,4 @@
+$kind: collection
+description: Admin endpoints for property management. Requires JWT +
+  manage_properties permission.
+order: 3000

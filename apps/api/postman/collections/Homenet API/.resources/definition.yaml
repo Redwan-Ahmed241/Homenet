@@ -1,0 +1,31 @@
+$kind: collection
+description: >-
+  Complete Postman collection for Homenet API — generated from API testing
+  guides.
+
+
+  Base URL: http://localhost:3000
+
+
+  ## Modules
+
+  - **Root** — Health check
+
+  - **Auth** — Authentication (register, login, refresh, logout, profile)
+
+  - **Users** — User management
+
+  - **Roles** — Roles & Permissions management
+
+  - **Areas** — Area/location management
+
+  - **Properties** — Property listings management
+variables:
+  baseUrl: http://localhost:3000
+  userId: uuid-of-user
+  roleId: uuid-of-role
+  permissionId: uuid-of-permission
+  areaId: uuid-of-area
+  propertyId: uuid-of-property
+  mediaId: uuid-of-media
+  access_token: <access_token>

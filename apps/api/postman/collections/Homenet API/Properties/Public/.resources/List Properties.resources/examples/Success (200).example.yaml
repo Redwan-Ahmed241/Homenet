@@ -1,0 +1,146 @@
+$kind: http-example
+request:
+  url: http://localhost:3000/v1/properties?page=1&limit=20
+  method: GET
+  queryParams:
+    - key: page
+      value: "1"
+      description: "Page number (default: 1)"
+    - key: limit
+      value: "20"
+      description: "Items per page (default: 20, max: 100)"
+    - key: city
+      value: ""
+      disabled: true
+      description: Filter by city name
+    - key: area_id
+      value: ""
+      disabled: true
+      description: Filter by area UUID
+    - key: type
+      value: ""
+      disabled: true
+      description: "Property type: residential, commercial, land, parking"
+    - key: listing_type
+      value: ""
+      disabled: true
+      description: "Listing type: sale, rent"
+    - key: min_price
+      value: ""
+      disabled: true
+      description: Minimum price filter
+    - key: max_price
+      value: ""
+      disabled: true
+      description: Maximum price filter
+    - key: min_area
+      value: ""
+      disabled: true
+      description: Minimum area size
+    - key: max_area
+      value: ""
+      disabled: true
+      description: Maximum area size
+    - key: bedrooms
+      value: ""
+      disabled: true
+      description: Filter by bedrooms
+    - key: bathrooms
+      value: ""
+      disabled: true
+      description: Filter by bathrooms
+    - key: search
+      value: ""
+      disabled: true
+      description: Case-insensitive search on title/description
+    - key: is_verified
+      value: ""
+      disabled: true
+      description: Filter by verification status
+    - key: sort_by
+      value: ""
+      disabled: true
+      description: "Sort: price_asc, price_desc, created_at_asc, created_at_desc,
+        view_count_desc"
+    - key: lat
+      value: ""
+      disabled: true
+      description: Latitude for proximity search
+    - key: lng
+      value: ""
+      disabled: true
+      description: Longitude for proximity search
+    - key: radius
+      value: ""
+      disabled: true
+      description: "Search radius in km (max: 50)"
+response:
+  statusCode: 200
+  statusText: OK
+  body:
+    type: text
+    content: >-
+      {
+        "success": true,
+        "message": "OK",
+        "data": {
+          "items": [
+            {
+              "id": "uuid-of-property",
+              "user_id": "uuid-of-user",
+              "area_id": "uuid-of-area",
+              "title": "Luxury 4BR Apartment in Gulshan-1",
+              "description": "Beautiful 4-bedroom apartment with panoramic city view...",
+              "type": "residential",
+              "subtype": null,
+              "listing_type": "sale",
+              "price": 25000000,
+              "price_currency": "BDT",
+              "area_size": 2200,
+              "area_unit": "sqft",
+              "location_lat": 23.7873,
+              "location_lng": 90.41,
+              "address": "Road 68, Gulshan-1, Dhaka",
+              "amenities": {
+                "bedrooms": 4,
+                "bathrooms": 4,
+                "flooring": "tiles",
+                "security": "24/7",
+                "parking": "covered"
+              },
+              "status": "active",
+              "is_verified": true,
+              "virtual_tour_url": null,
+              "view_count": 42,
+              "published_at": "2026-07-06T10:00:00.000Z",
+              "created_at": "2026-07-06T10:00:00.000Z",
+              "updated_at": "2026-07-06T10:00:00.000Z",
+              "area": {
+                "id": "uuid-of-area",
+                "name": "Gulshan-1",
+                "city": "Dhaka"
+              },
+              "user": {
+                "id": "uuid-of-user",
+                "full_name": "John Doe",
+                "avatar_url": null
+              },
+              "media": [
+                {
+                  "id": "uuid-of-media",
+                  "url": "https://example.com/photo.jpg",
+                  "thumbnail_url": "https://example.com/thumb.jpg"
+                }
+              ],
+              "_count": {
+                "media": 5
+              }
+            }
+          ],
+          "total": 10,
+          "page": 1,
+          "limit": 20,
+          "total_pages": 1
+        }
+      }
+order: 1000

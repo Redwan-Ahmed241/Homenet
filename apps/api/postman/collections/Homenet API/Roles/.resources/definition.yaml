@@ -1,0 +1,4 @@
+$kind: collection
+description: Roles & Permissions management endpoints. All require JWT. Some
+  require specific permissions (view_roles, manage_roles).
+order: 4000

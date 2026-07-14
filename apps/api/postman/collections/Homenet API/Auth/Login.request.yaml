@@ -1,0 +1,16 @@
+$kind: http-request
+name: Login
+description: Authenticates with email and password, returns access & refresh tokens.
+url: "{{base_url}}/v1/auth/login"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "{{email}}",
+      "password": "{{password}}"
+    }
+examples: ./.resources/Login.resources/examples
+order: 2000

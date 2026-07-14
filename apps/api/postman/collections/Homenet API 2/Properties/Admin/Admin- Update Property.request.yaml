@@ -1,0 +1,18 @@
+$kind: http-request
+name: "Admin: Update Property"
+description: Updates any property. Admin can change status. Requires
+  manage_properties permission.
+url: http://localhost:3000/v1/properties/{{propertyId}}/admin
+method: PATCH
+headers:
+  Content-Type: application/json
+  Authorization: Bearer <access_token>
+body:
+  type: json
+  content: |-
+    {
+      "title": "Admin Updated Title",
+      "status": "active"
+    }
+examples: ./.resources/Admin- Update Property.resources/examples
+order: 2000

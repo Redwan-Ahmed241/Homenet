@@ -1,0 +1,30 @@
+$kind: http-example
+request:
+  url: http://localhost:3000/v1/areas/{{areaId}}/children
+  method: GET
+  pathVariables:
+    areaId: uuid-of-area
+response:
+  statusCode: 200
+  statusText: OK
+  body:
+    type: text
+    content: |-
+      {
+        "success": true,
+        "message": "OK",
+        "data": [
+          {
+            "id": "uuid-of-child",
+            "name": "Gulshan-1",
+            "parent_area_id": "uuid-of-area",
+            "city": "Dhaka",
+            "created_at": "2026-07-05T10:00:00.000Z",
+            "updated_at": "2026-07-05T10:00:00.000Z",
+            "_count": {
+              "children": 0
+            }
+          }
+        ]
+      }
+order: 1000

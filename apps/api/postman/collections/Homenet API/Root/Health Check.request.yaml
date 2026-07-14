@@ -1,0 +1,6 @@
+$kind: http-request
+description: Health-check endpoint. Returns "Hello World!".
+url: http://localhost:3000/
+method: GET
+examples: ./.resources/Health Check.resources/examples
+order: 1000

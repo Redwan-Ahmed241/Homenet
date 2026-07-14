@@ -1,0 +1,15 @@
+$kind: http-request
+description: Attaches a permission to a role. Requires manage_roles permission.
+url: http://localhost:3000/v1/roles/{{roleId}}/permissions
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer <access_token>
+body:
+  type: json
+  content: |-
+    {
+      "permissionId": "uuid-of-permission"
+    }
+examples: ./.resources/Assign Permission to Role.resources/examples
+order: 6000

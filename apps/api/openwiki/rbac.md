@@ -29,17 +29,17 @@ removeUser(@Param('id') id: string) {
 ## Managing Roles & Permissions (API)
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/roles` | List all roles with their permissions |
-| `GET` | `/roles/:id` | Retrieve a single role |
-| `GET` | `/roles/user/:userId` | Get roles assigned to a user |
-| `POST` | `/roles/assign` | Assign a role to a user (`AssignRoleDto`) |
-| `DELETE` | `/roles/revoke` | Remove a role from a user |
-| `POST` | `/roles/:roleId/permissions` | Attach a permission to a role (`AssignPermissionDto`) |
-| `DELETE` | `/roles/:roleId/permissions/:permissionId` | Detach a permission |
+| `GET` | `/v1/roles` | List all roles with their permissions |
+| `GET` | `/v1/roles/:id` | Retrieve a single role |
+| `GET` | `/v1/roles/user/:userId` | Get roles assigned to a user |
+| `POST` | `/v1/roles/assign` | Assign a role to a user (`AssignRoleDto`) |
+| `DELETE` | `/v1/roles/revoke` | Remove a role from a user |
+| `POST` | `/v1/roles/:roleId/permissions` | Attach a permission to a role (`AssignPermissionDto`) |
+| `DELETE` | `/v1/roles/:roleId/permissions/:permissionId` | Detach a permission |
 
 ## Adding New Permissions
 1. Insert a new row into the `Permission` table (via Prisma or the admin UI).
-2. Optionally assign it to existing roles via the `POST /roles/:roleId/permissions` endpoint.
+2. Optionally assign it to existing roles via the `POST /v1/roles/:roleId/permissions` endpoint.
 3. Protect new routes with `@Permissions('new_permission')`.
 
 ## Database Model (Prisma)

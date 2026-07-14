@@ -11,7 +11,7 @@ import { Permissions } from '../../common/decorators/permissions.decorator.js';
 import { AssignRoleDto } from './dto/assign-role.dto.js';
 import { AssignPermissionDto } from './dto/assign-permission.dto.js';
 
-@Controller('roles')
+@Controller('v1/roles')
 export class RoleController {
   constructor(private readonly roleService: RoleService) {}
 

@@ -3,7 +3,7 @@
 The project uses **Jest** for both unit and end‑to‑end (e2e) tests.  All test files live under the `test/` directory and follow the standard Nest testing patterns.
 
 ## Test Structure
-- **Unit tests** – target individual services, guards, etc. located in `test/modules/<module>/` (e.g., `test/modules/auth/auth.service.spec.ts`). They use `@nestjs/testing` to create a testing module, mock dependencies (Prisma, JWT, Config, Logger), and verify business logic.
+- **Unit tests** – target individual services, guards, etc. located in `test/modules/<module>/` (e.g., `test/modules/v1/auth/v1/auth.service.spec.ts`). They use `@nestjs/testing` to create a testing module, mock dependencies (Prisma, JWT, Config, Logger), and verify business logic.
 - **E2E tests** – spin up the full Nest application using `Test.createTestingModule({ imports: [AppModule] })` and exercise HTTP endpoints via `supertest`. The entry point is `test/app.e2e-spec.ts`.
 - **Jest config** – defined in `test/jest-e2e.json` (for e2e) and the default `jest` section in `package.json` (for unit tests). The config sets `moduleFileExtensions`, `testRegex`, and uses `ts-jest` for TypeScript.
 

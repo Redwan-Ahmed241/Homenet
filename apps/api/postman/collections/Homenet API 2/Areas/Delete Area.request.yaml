@@ -1,0 +1,9 @@
+$kind: http-request
+description: Deletes an area. Blocked if area has active property listings.
+  Requires manage_areas permission.
+url: http://localhost:3000/v1/areas/{{areaId}}
+method: DELETE
+headers:
+  Authorization: Bearer <access_token>
+examples: ./.resources/Delete Area.resources/examples
+order: 6000

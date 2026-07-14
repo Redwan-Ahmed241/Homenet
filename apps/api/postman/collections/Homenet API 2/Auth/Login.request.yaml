@@ -1,0 +1,15 @@
+$kind: http-request
+description: Authenticates with email and password, returns access & refresh tokens.
+url: http://localhost:3000/v1/auth/login
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "email": "john@example.com",
+      "password": "StrongP@ss123"
+    }
+examples: ./.resources/Login.resources/examples
+order: 2000

@@ -1,0 +1,18 @@
+$kind: http-request
+description: Updates authenticated user's own property. All fields optional. JWT required.
+url: http://localhost:3000/v1/properties/{{propertyId}}
+method: PATCH
+headers:
+  Content-Type: application/json
+  Authorization: Bearer <access_token>
+pathVariables:
+  propertyId: uuid-of-property
+body:
+  type: json
+  content: |-
+    {
+      "title": "Updated Title - Now With Better Description",
+      "price": 95000
+    }
+examples: ./.resources/Update Property.resources/examples
+order: 2000
