@@ -12,6 +12,7 @@ import type {
   PaginatedResult,
   PropertyMedia,
 } from '../interfaces/property-repository.interface.js';
+import type { Verification, VerificationStatus } from '@prisma/client';
 
 const propertyPublicSelect = {
   id: true,
@@ -563,6 +564,49 @@ export class PrismaPropertyRepository implements IPropertyRepository {
       limit: query.limit,
       total_pages: Math.ceil(total / query.limit),
     };
+  }
+
+  async createVerification(propertyId: string): Promise<Verification> {
+    const verification = await this.prisma.verification.create({
+      data: {
+        property_id: propertyId,
+        status: 'pending',
+      },
+    });
+
+    this.logger.debug(`Verification created for property: ${propertyId}`, {
+      fileName: 'prisma-property.repository.ts',
+      functionName: 'createVerification',
+      lineNumber: 490,
+    });
+
+    return verification;
+  }
+
+  async updateVerificationStatus(
+    propertyId: string,
+    status: VerificationStatus,
+    notes?: string,
+  ): Promise<Verification> {
+    const verification = await this.prisma.verification.update({
+      where: { property_id: propertyId },
+      data: {
+        status,
+        notes: notes ?? null,
+        verified_at: status === 'verified' ? new Date() : null,
+      },
+    });
+
+    this.logger.debug(
+      `Verification status updated to ${status} for property: ${propertyId}`,
+      {
+        fileName: 'prisma-property.repository.ts',
+        functionName: 'updateVerificationStatus',
+        lineNumber: 515,
+      },
+    );
+
+    return verification;
   }
 
   private calculateDistance(

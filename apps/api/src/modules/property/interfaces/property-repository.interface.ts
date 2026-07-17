@@ -93,6 +93,8 @@ export interface PropertyMedia {
   display_order: number;
 }
 
+import type { Verification, VerificationStatus } from '@prisma/client';
+
 export interface IPropertyRepository {
   findPublished(query: PropertyQueryParams): Promise<PaginatedResult<PropertyListItem>>;
   findWithProximitySearch(query: PropertyQueryParams): Promise<PaginatedResult<PropertyListItem>>;
@@ -142,4 +144,11 @@ export interface IPropertyRepository {
   countMedia(propertyId: string, mediaType: string): Promise<number>;
   findAllAdmin(query: PropertyQueryParams): Promise<PaginatedResult<PropertyListItem>>;
   findUserProperties(query: PropertyQueryParams): Promise<PaginatedResult<PropertyListItem>>;
+
+  createVerification(propertyId: string): Promise<Verification>;
+  updateVerificationStatus(
+    propertyId: string,
+    status: VerificationStatus,
+    notes?: string,
+  ): Promise<Verification>;
 }

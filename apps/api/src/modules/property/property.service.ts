@@ -5,6 +5,7 @@ import { CACHE_TTL } from '../../common/cache/cache.service.interface.js';
 import { LoggerService } from '../../common/logger/logger.service.js';
 import { AppException } from '../../common/errors/app.exception.js';
 import { PROPERTY_ERRORS } from '../../common/errors/error-codes.js';
+import type { VerificationStatus } from '@prisma/client';
 import { CreatePropertyDto } from './dto/create-property.dto.js';
 import { UpdatePropertyDto } from './dto/update-property.dto.js';
 import { PropertyQueryDto } from './dto/property-query.dto.js';
@@ -517,5 +518,53 @@ export class PropertyService {
     });
 
     return updated;
+  }
+
+  async createVerification(propertyId: string) {
+    const property = await this.propertyRepo.findById(propertyId);
+
+    if (!property) {
+      this.logger.warn(`createVerification failed — property not found: ${propertyId}`, {
+        fileName: 'property.service.ts',
+        functionName: 'createVerification',
+        lineNumber: 480,
+      });
+      throw new AppException(PROPERTY_ERRORS.PROPERTY_NOT_FOUND);
+    }
+
+    const verification = await this.propertyRepo.createVerification(propertyId);
+
+    this.logger.info(`Verification record created for property: ${propertyId}`, {
+      fileName: 'property.service.ts',
+      functionName: 'createVerification',
+      lineNumber: 490,
+    });
+
+    return verification;
+  }
+
+  async updateVerificationStatus(
+    propertyId: string,
+    status: VerificationStatus,
+    notes?: string,
+  ) {
+    const verification = await this.propertyRepo.updateVerificationStatus(
+      propertyId,
+      status,
+      notes,
+    );
+
+    await this.invalidateDetailCache(propertyId);
+
+    this.logger.info(
+      `Verification status → ${status} for property: ${propertyId}`,
+      {
+        fileName: 'property.service.ts',
+        functionName: 'updateVerificationStatus',
+        lineNumber: 510,
+      },
+    );
+
+    return verification;
   }
 }
