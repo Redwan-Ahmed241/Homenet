@@ -1,8 +1,9 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, forwardRef } from '@nestjs/common';
 import { LoggerService } from '../../../common/logger/logger.service.js';
 import { BACKGROUND_TASK_CONFIG } from '../background-task.constants.js';
 import type { BackgroundTaskConfig } from '../background-task.constants.js';
 import type { IBackgroundTaskService } from '../interfaces/background-task.service.interface.js';
+import { VerificationService } from '../../../modules/verification/services/verification.service.js';
 
 @Injectable()
 export class PrototypeBackgroundTaskService implements IBackgroundTaskService {
@@ -12,6 +13,8 @@ export class PrototypeBackgroundTaskService implements IBackgroundTaskService {
     @Inject(BACKGROUND_TASK_CONFIG)
     private readonly config: BackgroundTaskConfig,
     private readonly logger: LoggerService,
+    @Inject(forwardRef(() => VerificationService))
+    private readonly verificationService: VerificationService,
   ) {
     this.delayMs = this.config.verificationDelayMs ?? 3000;
   }
@@ -23,20 +26,21 @@ export class PrototypeBackgroundTaskService implements IBackgroundTaskService {
     this.logger.info(`Verification enqueued for property: ${propertyId}`, {
       fileName,
       functionName,
-      lineNumber: 25,
+      lineNumber: 29,
     });
 
     // Schedule async — non-blocking, returns immediately
-    // TODO Phase 3: inject VerificationService and call processVerification()
     setTimeout(() => {
-      this.logger.info(
-        `Background task triggered for property: ${propertyId}`,
-        {
-          fileName,
-          functionName,
-          lineNumber: 34,
-        },
-      );
+      this.verificationService.processVerification(propertyId).catch((err) => {
+        this.logger.error(
+          `Verification failed for property: ${propertyId} — ${(err as Error).message}`,
+          {
+            fileName,
+            functionName,
+            lineNumber: 40,
+          },
+        );
+      });
     }, this.delayMs);
   }
 }

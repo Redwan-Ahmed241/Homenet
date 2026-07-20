@@ -13,6 +13,8 @@ import { CreatePropertyMediaDto } from './dto/create-property-media.dto.js';
 import type { IPropertyRepository } from './interfaces/property-repository.interface.js';
 import { UPLOAD_FOLDERS, ALLOWED_MIMETYPES, UPLOAD_LIMITS_MB } from '../../common/upload/upload.constants.js';
 import type { IUploadService } from '../../common/upload/interfaces/upload.service.interface.js';
+import { BACKGROUND_TASK_SERVICE } from '../../infrastructure/background-task/background-task.constants.js';
+import type { IBackgroundTaskService } from '../../infrastructure/background-task/interfaces/background-task.service.interface.js';
 
 @Injectable()
 export class PropertyService {
@@ -22,6 +24,8 @@ export class PropertyService {
     @Inject('ICacheService') private readonly cacheService: ICacheService,
     @Inject('IUploadService') private readonly uploadService: IUploadService,
     private readonly configService: ConfigService,
+    @Inject(BACKGROUND_TASK_SERVICE)
+    private readonly backgroundTaskService: IBackgroundTaskService,
   ) {}
 
   private generateCacheKey(prefix: string, data: any): string {
@@ -469,7 +473,7 @@ export class PropertyService {
       this.logger.warn(`Property not found: ${id}`, {
         fileName: 'property.service.ts',
         functionName: 'submitForVerification',
-        lineNumber: 430,
+        lineNumber: 435,
       });
       throw new AppException(PROPERTY_ERRORS.PROPERTY_NOT_FOUND);
     }
@@ -478,7 +482,7 @@ export class PropertyService {
       this.logger.warn(`User ${userId} attempted to submit property ${id} without ownership`, {
         fileName: 'property.service.ts',
         functionName: 'submitForVerification',
-        lineNumber: 437,
+        lineNumber: 442,
       });
       throw new ForbiddenException('You do not have permission to submit this property');
     }
@@ -487,7 +491,7 @@ export class PropertyService {
       this.logger.warn(`Cannot submit property ${id} with status "${property.status}" — must be draft`, {
         fileName: 'property.service.ts',
         functionName: 'submitForVerification',
-        lineNumber: 444,
+        lineNumber: 449,
       });
       throw new AppException(PROPERTY_ERRORS.PROPERTY_CANNOT_SUBMIT);
     }
@@ -495,29 +499,54 @@ export class PropertyService {
     // Validate all required fields are filled before submission
     const missingFields: string[] = [];
     if (!property.title) missingFields.push('title');
+    if (!property.description) missingFields.push('description');
+    if (!property.type) missingFields.push('type');
     if (!property.listing_type) missingFields.push('listing_type');
     if (!property.price || property.price <= 0) missingFields.push('price');
+    if (!property.area_id) missingFields.push('area_id');
+    if (!property.area_size || property.area_size <= 0) missingFields.push('area_size');
+    if (!property.area_unit) missingFields.push('area_unit');
+    if (!property.address) missingFields.push('address');
+    if (!property.location_lat) missingFields.push('location_lat');
+    if (!property.location_lng) missingFields.push('location_lng');
+
+    // Check at least 1 media item
+    const mediaCount = await this.propertyRepo.countMediaTotal(id);
+    if (mediaCount === 0) missingFields.push('media (at least 1 required)');
 
     if (missingFields.length > 0) {
-      this.logger.warn(`Cannot submit property ${id} — missing required fields: ${missingFields.join(', ')}`, {
-        fileName: 'property.service.ts',
-        functionName: 'submitForVerification',
-        lineNumber: 460,
-      });
-      throw new AppException(PROPERTY_ERRORS.PROPERTY_CANNOT_SUBMIT);
+      this.logger.warn(
+        `Cannot submit property ${id} — missing required fields: ${missingFields.join(', ')}`,
+        {
+          fileName: 'property.service.ts',
+          functionName: 'submitForVerification',
+          lineNumber: 478,
+        },
+      );
+      throw new AppException(
+        PROPERTY_ERRORS.PROPERTY_CANNOT_SUBMIT,
+        `Missing required fields: ${missingFields.join(', ')}`,
+      );
     }
 
-    const updated = await this.propertyRepo.update(id, { status: 'pending' });
+    // Transition property to pending
+    await this.propertyRepo.updateStatus(id, 'pending');
+
+    // Create verification record
+    await this.createVerification(id);
+
+    // Enqueue via BackgroundTaskService — no knowledge of setTimeout or BullMQ
+    await this.backgroundTaskService.enqueueVerification(id);
 
     await this.invalidateAll(id);
 
     this.logger.info(`Property ${id} submitted for verification`, {
       fileName: 'property.service.ts',
       functionName: 'submitForVerification',
-      lineNumber: 470,
+      lineNumber: 497,
     });
 
-    return updated;
+    return { id, status: 'pending' };
   }
 
   async createVerification(propertyId: string) {

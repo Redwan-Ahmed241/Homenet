@@ -100,7 +100,22 @@ export interface IPropertyRepository {
   findWithProximitySearch(query: PropertyQueryParams): Promise<PaginatedResult<PropertyListItem>>;
   findPublishedById(id: string): Promise<PropertyDetail | null>;
   incrementViewCount(id: string): Promise<void>;
-  findById(id: string): Promise<{ id: string; user_id: string; type: string; status: string; title: string; listing_type: string; price: number } | null>;
+  findById(id: string): Promise<{
+    id: string;
+    user_id: string;
+    type: string;
+    status: string;
+    title: string;
+    description: string | null;
+    listing_type: string;
+    price: number;
+    area_id: string;
+    area_size: number | null;
+    area_unit: string | null;
+    address: string | null;
+    location_lat: number | null;
+    location_lng: number | null;
+  } | null>;
   create(data: {
     user_id: string;
     area_id: string;
@@ -142,6 +157,7 @@ export interface IPropertyRepository {
   } | null>;
   deleteMedia(mediaId: string): Promise<void>;
   countMedia(propertyId: string, mediaType: string): Promise<number>;
+  countMediaTotal(propertyId: string): Promise<number>;
   findAllAdmin(query: PropertyQueryParams): Promise<PaginatedResult<PropertyListItem>>;
   findUserProperties(query: PropertyQueryParams): Promise<PaginatedResult<PropertyListItem>>;
 
@@ -151,4 +167,5 @@ export interface IPropertyRepository {
     status: VerificationStatus,
     notes?: string,
   ): Promise<Verification>;
+  updateStatus(propertyId: string, status: string): Promise<void>;
 }
