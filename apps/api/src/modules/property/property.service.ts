@@ -487,8 +487,8 @@ export class PropertyService {
       throw new ForbiddenException('You do not have permission to submit this property');
     }
 
-    if (property.status !== 'draft') {
-      this.logger.warn(`Cannot submit property ${id} with status "${property.status}" — must be draft`, {
+    if (property.status !== 'pending') {
+      this.logger.warn(`Cannot submit property ${id} with status "${property.status}" — must be pending`, {
         fileName: 'property.service.ts',
         functionName: 'submitForVerification',
         lineNumber: 449,
@@ -528,9 +528,6 @@ export class PropertyService {
         `Missing required fields: ${missingFields.join(', ')}`,
       );
     }
-
-    // Transition property to pending
-    await this.propertyRepo.updateStatus(id, 'pending');
 
     // Create verification record
     await this.createVerification(id);
