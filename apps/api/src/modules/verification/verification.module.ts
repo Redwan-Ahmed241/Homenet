@@ -1,11 +1,11 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { PropertyModule } from '../property/property.module.js';
 import { VERIFICATION_SERVICE } from './verification.constants.js';
 import { VerificationService } from './services/verification.service.js';
 import { MockVerificationService } from './services/mock-verification.service.js';
 
 @Module({
-  imports: [PropertyModule],
+  imports: [forwardRef(() => PropertyModule)],
   providers: [
     VerificationService,
     {

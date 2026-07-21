@@ -1,8 +1,11 @@
 import { Injectable, Inject } from '@nestjs/common';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { LoggerService } from '../../../common/logger/logger.service.js';
 import { PropertyService } from '../../property/property.service.js';
 import { VERIFICATION_SERVICE } from '../verification.constants.js';
 import type { IVerificationService } from '../interfaces/verification.service.interface.js';
+import { PropertyVerifiedEvent } from '../../events/events/property-verified.event.js';
+import { PropertyRejectedEvent } from '../../events/events/property-rejected.event.js';
 
 @Injectable()
 export class VerificationService {
@@ -11,6 +14,7 @@ export class VerificationService {
     private readonly verificationProvider: IVerificationService,
     private readonly propertyService: PropertyService,
     private readonly logger: LoggerService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async processVerification(propertyId: string): Promise<void> {
@@ -20,7 +24,7 @@ export class VerificationService {
     this.logger.info(`Verification started for property: ${propertyId}`, {
       fileName,
       functionName,
-      lineNumber: 20,
+      lineNumber: 23,
     });
 
     try {
@@ -39,18 +43,30 @@ export class VerificationService {
         {
           fileName,
           functionName,
-          lineNumber: 37,
+          lineNumber: 40,
         },
       );
 
-      // TODO Phase 4: emit PropertyVerifiedEvent or PropertyRejectedEvent
+      // Step 3: Emit the correct event
+      const verifiedAt = new Date();
+      if (result.status === 'verified') {
+        this.eventEmitter.emit(
+          'property.verified',
+          new PropertyVerifiedEvent(propertyId, verifiedAt),
+        );
+      } else {
+        this.eventEmitter.emit(
+          'property.rejected',
+          new PropertyRejectedEvent(propertyId, result.notes ?? 'No details provided'),
+        );
+      }
     } catch (error) {
       this.logger.error(
         `Verification failed for property: ${propertyId} — ${(error as Error).message}`,
         {
           fileName,
           functionName,
-          lineNumber: 48,
+          lineNumber: 61,
         },
       );
     }

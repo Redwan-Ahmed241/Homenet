@@ -237,10 +237,40 @@ export class PrismaPropertyRepository implements IPropertyRepository {
     });
   }
 
-  async findById(id: string): Promise<{ id: string; user_id: string; type: string; status: string; title: string; listing_type: string; price: number } | null> {
+  async findById(id: string): Promise<{
+    id: string;
+    user_id: string;
+    type: string;
+    status: string;
+    title: string;
+    description: string | null;
+    listing_type: string;
+    price: number;
+    area_id: string;
+    area_size: number | null;
+    area_unit: string | null;
+    address: string | null;
+    location_lat: number | null;
+    location_lng: number | null;
+  } | null> {
     const property = await this.prisma.property.findUnique({
       where: { id },
-      select: { id: true, user_id: true, type: true, status: true, title: true, listing_type: true, price: true },
+      select: {
+        id: true,
+        user_id: true,
+        type: true,
+        status: true,
+        title: true,
+        description: true,
+        listing_type: true,
+        price: true,
+        area_id: true,
+        area_size: true,
+        area_unit: true,
+        address: true,
+        location_lat: true,
+        location_lng: true,
+      },
     });
 
     return property;
@@ -430,6 +460,14 @@ export class PrismaPropertyRepository implements IPropertyRepository {
     return count;
   }
 
+  async countMediaTotal(propertyId: string): Promise<number> {
+    const count = await this.prisma.propertyMedia.count({
+      where: { property_id: propertyId },
+    });
+
+    return count;
+  }
+
   async findMediaById(mediaId: string): Promise<{
     id: string;
     property_id: string;
@@ -607,6 +645,19 @@ export class PrismaPropertyRepository implements IPropertyRepository {
     );
 
     return verification;
+  }
+
+  async updateStatus(propertyId: string, status: string): Promise<void> {
+    await this.prisma.property.update({
+      where: { id: propertyId },
+      data: { status: status as any },
+    });
+
+    this.logger.debug(`Property ${propertyId} status updated to ${status}`, {
+      fileName: 'prisma-property.repository.ts',
+      functionName: 'updateStatus',
+      lineNumber: 528,
+    });
   }
 
   private calculateDistance(

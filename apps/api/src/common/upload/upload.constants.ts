@@ -5,10 +5,10 @@ export const UPLOAD_FOLDERS = {
 } as const;
 
 export const ALLOWED_MIMETYPES = {
-  IMAGES:     ['image/jpeg', 'image/png', 'image/webp'],
+  IMAGES:     ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'],
   VIDEOS:     ['video/mp4', 'video/quicktime'],
   DOCUMENTS:  ['application/pdf'],
-  ALL_MEDIA:  ['image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/quicktime'],
+  ALL_MEDIA:  ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'video/mp4', 'video/quicktime'],
 } as const;
 
 export const UPLOAD_LIMITS_MB = {

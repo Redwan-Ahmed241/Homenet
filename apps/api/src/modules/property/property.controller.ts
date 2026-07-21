@@ -7,6 +7,8 @@ import {
   Param,
   Body,
   Query,
+  HttpCode,
+  HttpStatus,
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
@@ -81,6 +83,7 @@ export class PropertyController {
     return this.propertyService.update(id, dto, user.id, false);
   }
 
+  @HttpCode(HttpStatus.ACCEPTED)
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post(':id/submit')
   submitForVerification(

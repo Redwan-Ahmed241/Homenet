@@ -1,11 +1,12 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { BACKGROUND_TASK_SERVICE, BACKGROUND_TASK_CONFIG } from './background-task.constants.js';
 import type { BackgroundTaskConfig } from './background-task.constants.js';
 import { PrototypeBackgroundTaskService } from './services/prototype-background-task.service.js';
+import { VerificationModule } from '../../modules/verification/verification.module.js';
 
 @Module({
-  imports: [ConfigModule],
+  imports: [ConfigModule, forwardRef(() => VerificationModule)],
   providers: [
     {
       provide: BACKGROUND_TASK_CONFIG,
