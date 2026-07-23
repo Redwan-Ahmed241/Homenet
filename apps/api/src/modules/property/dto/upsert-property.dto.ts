@@ -4,6 +4,7 @@ import {
   IsEnum,
   IsNumber,
   IsUrl,
+  IsUUID,
   MaxLength,
   Min,
   IsObject,
@@ -13,11 +14,11 @@ import { PropertyType, ListingType, PropertyStatus } from '@prisma/client';
 
 export class UpsertPropertyDto {
   @IsOptional()
-  @IsString()
+  @IsUUID()
   property_id?: string;
 
   @IsOptional()
-  @IsString()
+  @IsUUID()
   area_id?: string;
 
   @IsOptional()

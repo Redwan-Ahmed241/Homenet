@@ -5,6 +5,7 @@ import { CACHE_TTL } from '../../common/cache/cache.service.interface.js';
 import { LoggerService } from '../../common/logger/logger.service.js';
 import { AppException } from '../../common/errors/app.exception.js';
 import { PROPERTY_ERRORS } from '../../common/errors/error-codes.js';
+import { AREA_ERRORS } from '../../common/errors/error-codes.js';
 import type { VerificationStatus } from '@prisma/client';
 import { UpsertPropertyDto } from './dto/upsert-property.dto.js';
 import { PropertyQueryDto } from './dto/property-query.dto.js';
@@ -117,9 +118,9 @@ export class PropertyService {
     'title', 'type', 'listing_type', 'price',
   ];
 
-  private computeInitialStatus(dto: UpsertPropertyDto): 'draft' | 'pending' {
+  private computeStatus(data: Record<string, unknown>): 'draft' | 'pending' {
     const allPresent = this.REQUIRED_FIELDS.every((field) => {
-      const val = (dto as unknown as Record<string, unknown>)[field];
+      const val = data[field];
       return val !== undefined && val !== null && val !== '';
     });
     return allPresent ? 'pending' : 'draft';
@@ -151,7 +152,7 @@ export class PropertyService {
       if (dto.area_id) {
         const area = await this.propertyRepo.findAreaById(dto.area_id);
         if (!area) {
-          throw new AppException(PROPERTY_ERRORS.PROPERTY_NOT_FOUND);
+          throw new AppException(AREA_ERRORS.AREA_NOT_FOUND);
         }
       }
 
@@ -190,17 +191,13 @@ export class PropertyService {
         updateData.status = dto.status;
       } else {
         // Re-compute status based on merged existing + new data
-      const merged: Record<string, unknown> = {};
-      for (const field of this.REQUIRED_FIELDS) {
-        merged[field] = (dto as unknown as Record<string, unknown>)[field] ?? (existing as unknown as Record<string, unknown>)[field];
-      }
+        const merged: Record<string, unknown> = {};
+        for (const field of this.REQUIRED_FIELDS) {
+          merged[field] = (dto as unknown as Record<string, unknown>)[field]
+            ?? (existing as unknown as Record<string, unknown>)[field];
+        }
 
-      const allComplete = this.REQUIRED_FIELDS.every((field) => {
-        const val = merged[field];
-        return val !== undefined && val !== null && val !== '';
-      });
-
-        const newStatus = allComplete ? 'pending' : 'draft';
+        const newStatus = this.computeStatus(merged);
         if (newStatus !== existing.status) {
           updateData.status = newStatus;
         }
@@ -217,9 +214,9 @@ export class PropertyService {
       this.logger.warn('area_id is required for property creation', {
         fileName: 'property.service.ts',
         functionName: 'upsert',
-        lineNumber: 227,
+        lineNumber: 213,
       });
-      throw new AppException(PROPERTY_ERRORS.PROPERTY_NOT_FOUND);
+      throw new AppException(PROPERTY_ERRORS.PROPERTY_MISSING_AREA);
     }
 
     const area = await this.propertyRepo.findAreaById(dto.area_id);
@@ -228,9 +225,9 @@ export class PropertyService {
       this.logger.warn(`Area not found: ${dto.area_id}`, {
         fileName: 'property.service.ts',
         functionName: 'upsert',
-        lineNumber: 130,
+        lineNumber: 223,
       });
-      throw new AppException(PROPERTY_ERRORS.PROPERTY_NOT_FOUND);
+      throw new AppException(AREA_ERRORS.AREA_NOT_FOUND);
     }
 
     // Validate amenities only when both type and amenities are provided
@@ -246,7 +243,7 @@ export class PropertyService {
       }
     }
 
-    const status = this.computeInitialStatus(dto);
+    const status = this.computeStatus(dto as unknown as Record<string, unknown>);
 
     const property = await this.propertyRepo.create({
       user_id: userId,

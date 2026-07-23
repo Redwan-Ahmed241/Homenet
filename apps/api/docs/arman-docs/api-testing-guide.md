@@ -1298,8 +1298,8 @@ Authorization: Bearer <access_token>
 ```json
 {
   "success": false,
-  "message": "Property not found",
-  "error_code": 1500,
+  "message": "Area not found",
+  "error_code": 1400,
   "data": null
 }
 ```
@@ -1526,9 +1526,6 @@ Authorization: Bearer <access_token>
 11. **Remove Again (No Avatar)** — Hit `DELETE /users/avatar` again. Expects error code `1200` (User not found / no avatar).
 12. **Upload Invalid File Type** — Try uploading a `.pdf` file to `POST /users/avatar`. Expects error code `1210`.
 13. **Upload Without File** — Hit `POST /users/avatar` with no file attached. Expects `400` bad request.
-14. **List Areas** — View all seeded areas via `GET /areas` (no auth needed)
-15. **Get Area Details** — View a single area via `GET /areas/:id` (no auth needed)
-16. **Get Area Children** — View sub-areas via `GET /areas/:id/children` (no auth needed)
 14. **List Areas** — View all seeded areas via `GET /areas` (no auth needed)
 15. **Get Area Details** — View a single area via `GET /areas/:id` (no auth needed)
 16. **Get Area Children** — View sub-areas via `GET /areas/:id/children` (no auth needed)

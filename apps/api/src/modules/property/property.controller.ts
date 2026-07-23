@@ -72,6 +72,20 @@ export class PropertyController {
     return this.propertyService.upsert(dto, user.id);
   }
 
+  /**
+   * @deprecated Use POST /properties with property_id in body instead.
+   * Kept for backward compatibility with existing clients.
+   */
+  @Throttle({ default: { limit: 10, ttl: 60000 } })
+  @Patch(':id')
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpsertPropertyDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.propertyService.upsert({ ...dto, property_id: id }, user.id);
+  }
+
   @HttpCode(HttpStatus.ACCEPTED)
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post(':id/submit')
