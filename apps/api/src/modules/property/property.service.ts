@@ -6,8 +6,7 @@ import { LoggerService } from '../../common/logger/logger.service.js';
 import { AppException } from '../../common/errors/app.exception.js';
 import { PROPERTY_ERRORS } from '../../common/errors/error-codes.js';
 import type { VerificationStatus } from '@prisma/client';
-import { CreatePropertyDto } from './dto/create-property.dto.js';
-import { UpdatePropertyDto } from './dto/update-property.dto.js';
+import { UpsertPropertyDto } from './dto/upsert-property.dto.js';
 import { PropertyQueryDto } from './dto/property-query.dto.js';
 import { CreatePropertyMediaDto } from './dto/create-property-media.dto.js';
 import type { IPropertyRepository } from './interfaces/property-repository.interface.js';
@@ -118,7 +117,7 @@ export class PropertyService {
     'title', 'type', 'listing_type', 'price',
   ];
 
-  private computeInitialStatus(dto: CreatePropertyDto): 'draft' | 'pending' {
+  private computeInitialStatus(dto: UpsertPropertyDto): 'draft' | 'pending' {
     const allPresent = this.REQUIRED_FIELDS.every((field) => {
       const val = (dto as unknown as Record<string, unknown>)[field];
       return val !== undefined && val !== null && val !== '';
@@ -126,13 +125,109 @@ export class PropertyService {
     return allPresent ? 'pending' : 'draft';
   }
 
-  async create(dto: CreatePropertyDto, userId: string) {
-    // Validate area exists
+  async upsert(dto: UpsertPropertyDto, userId: string, isAdmin: boolean = false) {
+    if (dto.property_id) {
+      // ── UPDATE PATH ──
+      const existing = await this.propertyRepo.findById(dto.property_id);
+
+      if (!existing) {
+        this.logger.warn(`Property not found: ${dto.property_id}`, {
+          fileName: 'property.service.ts',
+          functionName: 'upsert',
+          lineNumber: 161,
+        });
+        throw new AppException(PROPERTY_ERRORS.PROPERTY_NOT_FOUND);
+      }
+
+      if (existing.user_id !== userId && !isAdmin) {
+        this.logger.warn(`User ${userId} attempted to update property ${dto.property_id} without permission`, {
+          fileName: 'property.service.ts',
+          functionName: 'upsert',
+          lineNumber: 168,
+        });
+        throw new ForbiddenException('You do not have permission to update this property');
+      }
+
+      if (dto.area_id) {
+        const area = await this.propertyRepo.findAreaById(dto.area_id);
+        if (!area) {
+          throw new AppException(PROPERTY_ERRORS.PROPERTY_NOT_FOUND);
+        }
+      }
+
+      if (dto.amenities && Object.keys(dto.amenities).length > 0) {
+        const type = dto.type ?? existing.type;
+        const valid = this.validateAmenities(type, dto.amenities);
+        if (!valid) {
+          this.logger.warn(`Invalid amenities structure for property type ${type}`, {
+            fileName: 'property.service.ts',
+            functionName: 'upsert',
+            lineNumber: 188,
+          });
+          throw new AppException(PROPERTY_ERRORS.PROPERTY_INVALID_AMENITIES);
+        }
+      }
+
+      const updateData: Record<string, any> = {};
+      if (dto.title !== undefined) updateData.title = dto.title;
+      if (dto.description !== undefined) updateData.description = dto.description;
+      if (dto.type !== undefined) updateData.type = dto.type;
+      if (dto.subtype !== undefined) updateData.subtype = dto.subtype;
+      if (dto.listing_type !== undefined) updateData.listing_type = dto.listing_type;
+      if (dto.price !== undefined) updateData.price = dto.price;
+      if (dto.price_currency !== undefined) updateData.price_currency = dto.price_currency;
+      if (dto.area_size !== undefined) updateData.area_size = dto.area_size;
+      if (dto.area_unit !== undefined) updateData.area_unit = dto.area_unit;
+      if (dto.location_lat !== undefined) updateData.location_lat = dto.location_lat;
+      if (dto.location_lng !== undefined) updateData.location_lng = dto.location_lng;
+      if (dto.address !== undefined) updateData.address = dto.address;
+      if (dto.amenities !== undefined) updateData.amenities = dto.amenities;
+      if (dto.virtual_tour_url !== undefined) updateData.virtual_tour_url = dto.virtual_tour_url;
+      if (dto.area_id !== undefined) updateData.area = { connect: { id: dto.area_id } };
+
+      // Allow admin to directly override status
+      if (dto.status !== undefined && isAdmin) {
+        updateData.status = dto.status;
+      } else {
+        // Re-compute status based on merged existing + new data
+      const merged: Record<string, unknown> = {};
+      for (const field of this.REQUIRED_FIELDS) {
+        merged[field] = (dto as unknown as Record<string, unknown>)[field] ?? (existing as unknown as Record<string, unknown>)[field];
+      }
+
+      const allComplete = this.REQUIRED_FIELDS.every((field) => {
+        const val = merged[field];
+        return val !== undefined && val !== null && val !== '';
+      });
+
+        const newStatus = allComplete ? 'pending' : 'draft';
+        if (newStatus !== existing.status) {
+          updateData.status = newStatus;
+        }
+      }
+
+      const updated = await this.propertyRepo.update(dto.property_id, updateData);
+
+      await this.invalidateAll(dto.property_id);
+      return updated;
+    }
+
+    // ── CREATE PATH ──
+    if (!dto.area_id) {
+      this.logger.warn('area_id is required for property creation', {
+        fileName: 'property.service.ts',
+        functionName: 'upsert',
+        lineNumber: 227,
+      });
+      throw new AppException(PROPERTY_ERRORS.PROPERTY_NOT_FOUND);
+    }
+
     const area = await this.propertyRepo.findAreaById(dto.area_id);
+
     if (!area) {
       this.logger.warn(`Area not found: ${dto.area_id}`, {
         fileName: 'property.service.ts',
-        functionName: 'create',
+        functionName: 'upsert',
         lineNumber: 130,
       });
       throw new AppException(PROPERTY_ERRORS.PROPERTY_NOT_FOUND);
@@ -144,7 +239,7 @@ export class PropertyService {
       if (!valid) {
         this.logger.warn(`Invalid amenities structure for property type ${dto.type}`, {
           fileName: 'property.service.ts',
-          functionName: 'create',
+          functionName: 'upsert',
           lineNumber: 142,
         });
         throw new AppException(PROPERTY_ERRORS.PROPERTY_INVALID_AMENITIES);
@@ -175,71 +270,6 @@ export class PropertyService {
 
     await this.invalidateListCache();
     return property;
-  }
-
-  async update(id: string, dto: UpdatePropertyDto, userId: string, isAdmin: boolean) {
-    const property = await this.propertyRepo.findById(id);
-
-    if (!property) {
-      this.logger.warn(`Property not found: ${id}`, {
-        fileName: 'property.service.ts',
-        functionName: 'update',
-        lineNumber: 161,
-      });
-      throw new AppException(PROPERTY_ERRORS.PROPERTY_NOT_FOUND);
-    }
-
-    if (property.user_id !== userId && !isAdmin) {
-      this.logger.warn(`User ${userId} attempted to update property ${id} without permission`, {
-        fileName: 'property.service.ts',
-        functionName: 'update',
-        lineNumber: 168,
-      });
-      throw new ForbiddenException('You do not have permission to update this property');
-    }
-
-    if (dto.area_id) {
-      const area = await this.propertyRepo.findAreaById(dto.area_id);
-      if (!area) {
-        throw new AppException(PROPERTY_ERRORS.PROPERTY_NOT_FOUND);
-      }
-    }
-
-    if (dto.amenities && Object.keys(dto.amenities).length > 0) {
-      const type = dto.type ?? property.type;
-      const valid = this.validateAmenities(type, dto.amenities);
-      if (!valid) {
-        this.logger.warn(`Invalid amenities structure for property type ${type}`, {
-          fileName: 'property.service.ts',
-          functionName: 'update',
-          lineNumber: 188,
-        });
-        throw new AppException(PROPERTY_ERRORS.PROPERTY_INVALID_AMENITIES);
-      }
-    }
-
-    const updateData: Record<string, any> = {};
-    if (dto.title !== undefined) updateData.title = dto.title;
-    if (dto.description !== undefined) updateData.description = dto.description;
-    if (dto.type !== undefined) updateData.type = dto.type;
-    if (dto.subtype !== undefined) updateData.subtype = dto.subtype;
-    if (dto.listing_type !== undefined) updateData.listing_type = dto.listing_type;
-    if (dto.price !== undefined) updateData.price = dto.price;
-    if (dto.price_currency !== undefined) updateData.price_currency = dto.price_currency;
-    if (dto.area_size !== undefined) updateData.area_size = dto.area_size;
-    if (dto.area_unit !== undefined) updateData.area_unit = dto.area_unit;
-    if (dto.location_lat !== undefined) updateData.location_lat = dto.location_lat;
-    if (dto.location_lng !== undefined) updateData.location_lng = dto.location_lng;
-    if (dto.address !== undefined) updateData.address = dto.address;
-    if (dto.amenities !== undefined) updateData.amenities = dto.amenities;
-    if (dto.virtual_tour_url !== undefined) updateData.virtual_tour_url = dto.virtual_tour_url;
-    if (dto.area_id !== undefined) updateData.area = { connect: { id: dto.area_id } };
-    if (dto.status !== undefined && isAdmin) updateData.status = dto.status;
-
-    const updated = await this.propertyRepo.update(id, updateData);
-
-    await this.invalidateAll(id);
-    return updated;
   }
 
   async remove(id: string, userId: string, isAdmin: boolean) {
