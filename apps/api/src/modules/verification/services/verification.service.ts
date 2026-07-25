@@ -1,6 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { LoggerService } from '../../../common/logger/logger.service.js';
+import { PrismaService } from '../../../common/database/prisma.service.js';
 import { PropertyService } from '../../property/property.service.js';
 import { VERIFICATION_SERVICE } from '../verification.constants.js';
 import type { IVerificationService } from '../interfaces/verification.service.interface.js';
@@ -13,6 +14,7 @@ export class VerificationService {
     @Inject(VERIFICATION_SERVICE)
     private readonly verificationProvider: IVerificationService,
     private readonly propertyService: PropertyService,
+    private readonly prisma: PrismaService,
     private readonly logger: LoggerService,
     private readonly eventEmitter: EventEmitter2,
   ) {}
@@ -47,17 +49,31 @@ export class VerificationService {
         },
       );
 
-      // Step 3: Emit the correct event
+      // Step 3: Emit the correct event with the property owner's userId
+      const property = await this.prisma.property.findUnique({
+        where: { id: propertyId },
+        select: { user_id: true },
+      });
+
+      if (!property) {
+        this.logger.error(`Property not found after verification: ${propertyId}`, {
+          fileName,
+          functionName,
+          lineNumber: 51,
+        });
+        return;
+      }
+
       const verifiedAt = new Date();
       if (result.status === 'verified') {
         this.eventEmitter.emit(
           'property.verified',
-          new PropertyVerifiedEvent(propertyId, verifiedAt),
+          new PropertyVerifiedEvent(propertyId, property.user_id, verifiedAt),
         );
       } else {
         this.eventEmitter.emit(
           'property.rejected',
-          new PropertyRejectedEvent(propertyId, result.notes ?? 'No details provided'),
+          new PropertyRejectedEvent(propertyId, property.user_id, result.notes ?? 'No details provided'),
         );
       }
     } catch (error) {

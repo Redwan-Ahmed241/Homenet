@@ -24,10 +24,10 @@ export class VerificationListener {
       { fileName, functionName, lineNumber: 22 },
     );
 
-    await this.notification.send('system', {
+    await this.notification.send(event.userId, {
       type: 'property.verified',
       title: 'Property Verified',
-      message: `Property ${event.propertyId} has been verified successfully.`,
+      message: `Your property has been verified successfully.`,
       metadata: {
         propertyId: event.propertyId,
         verifiedAt: event.verifiedAt,
@@ -45,10 +45,10 @@ export class VerificationListener {
       { fileName, functionName, lineNumber: 41 },
     );
 
-    await this.notification.send('system', {
+    await this.notification.send(event.userId, {
       type: 'property.rejected',
       title: 'Property Verification Failed',
-      message: `Property ${event.propertyId} was rejected. Reason: ${event.notes}`,
+      message: `Your property verification was rejected. Reason: ${event.notes}`,
       metadata: {
         propertyId: event.propertyId,
         notes: event.notes,
