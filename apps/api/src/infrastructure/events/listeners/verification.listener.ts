@@ -1,10 +1,10 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { OnEvent } from '@nestjs/event-emitter';
 import { LoggerService } from '../../../common/logger/logger.service.js';
-import { NOTIFICATION_SERVICE } from '../../../infrastructure/notification/constants.js';
-import type { INotificationService } from '../../../infrastructure/notification/interfaces/notification.service.interface.js';
-import { PropertyVerifiedEvent } from '../events/property-verified.event.js';
-import { PropertyRejectedEvent } from '../events/property-rejected.event.js';
+import { NOTIFICATION_SERVICE } from '../../notification/constants.js';
+import type { INotificationService } from '../../notification/interfaces/notification.service.interface.js';
+import { PropertyVerifiedEvent } from '../../../modules/verification/events/property-verified.event.js';
+import { PropertyRejectedEvent } from '../../../modules/verification/events/property-rejected.event.js';
 
 @Injectable()
 export class VerificationListener {

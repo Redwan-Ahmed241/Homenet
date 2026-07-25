@@ -19,7 +19,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { BackgroundTaskModule } from './infrastructure/background-task/background-task.module.js';
 import { NotificationModule } from './infrastructure/notification/notification.module.js';
 import { VerificationModule } from './modules/verification/verification.module.js';
-import { EventsModule } from './modules/events/events.module.js';
+import { EventsModule } from './infrastructure/events/events.module.js';
 
 @Module({
   imports: [

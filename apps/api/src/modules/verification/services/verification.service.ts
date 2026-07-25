@@ -1,12 +1,12 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { LoggerService } from '../../../common/logger/logger.service.js';
-import { PrismaService } from '../../../common/database/prisma.service.js';
+import { PrismaService } from '../../../config/prisma/prisma.service.js';
 import { PropertyService } from '../../property/property.service.js';
 import { VERIFICATION_SERVICE } from '../verification.constants.js';
 import type { IVerificationService } from '../interfaces/verification.service.interface.js';
-import { PropertyVerifiedEvent } from '../../events/events/property-verified.event.js';
-import { PropertyRejectedEvent } from '../../events/events/property-rejected.event.js';
+import { PropertyVerifiedEvent } from '../events/property-verified.event.js';
+import { PropertyRejectedEvent } from '../events/property-rejected.event.js';
 
 @Injectable()
 export class VerificationService {
