@@ -13,6 +13,11 @@ export const PROPERTY_ERRORS = {
     message: 'You do not have permission to modify this property',
     httpStatus: 403,
   },
+  PROPERTY_MISSING_AREA: {
+    code: 1502,
+    message: 'area_id is required for property creation',
+    httpStatus: 400,
+  },
   PROPERTY_INVALID_AMENITIES: {
     code: 1503,
     message: 'Invalid amenities structure for the specified property type',

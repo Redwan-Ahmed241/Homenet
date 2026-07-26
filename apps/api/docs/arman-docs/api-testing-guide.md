@@ -1221,11 +1221,114 @@ Authorization: Bearer <access_token>
 
 ---
 
-## 6. Properties — PropertyMedia
+## 6. Properties
 
-> **Note:** This section covers PropertyMedia operations only. Full Property CRUD documentation will be added separately.
+### 6.1 Create or Update Property (Upsert)
 
-### 6.1 Add Media to Property
+### `POST /properties`
+
+Creates a new property or updates an existing one. If `property_id` is provided, it updates that property; otherwise a new property is created.
+
+After saving, the status is automatically recomputed:
+- If all required fields (`title`, `type`, `listing_type`, `price`) are present → **`pending`** (ready for review).
+- Otherwise → **`draft`** (incomplete, can be finished later).
+
+Requires authentication. Only the property owner can update their own properties.
+
+**Request:**
+
+```
+POST http://localhost:3000/properties
+Content-Type: application/json
+Authorization: Bearer <access_token>
+```
+
+**Body:**
+
+```json
+{
+  "property_id": "uuid-of-existing-property",
+  "area_id": "uuid-of-area",
+  "title": "Modern Apartment in Gulshan",
+  "description": "A beautiful 3-bedroom apartment with a scenic view.",
+  "type": "residential",
+  "subtype": "apartment",
+  "listing_type": "rent",
+  "price": 25000,
+  "price_currency": "BDT",
+  "area_size": 1200,
+  "area_unit": "sqft",
+  "location_lat": 23.7805,
+  "location_lng": 90.4142,
+  "address": "House 12, Road 5, Gulshan 1, Dhaka",
+  "amenities": { "bedrooms": 3, "bathrooms": 2, "balcony": true },
+  "virtual_tour_url": "https://tour.example.com/property-123"
+}
+```
+
+> **To create a new property**, omit `property_id`. Only `area_id` is required — everything else is optional (missing required fields will result in a `draft` status).
+> **To update an existing property**, include `property_id` and only the fields you want to change.
+
+**Response (201 for create / 200 for update):**
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "id": "uuid-of-property",
+    "title": "Modern Apartment in Gulshan"
+  }
+}
+```
+
+**Error — Property not found (404):**
+
+```json
+{
+  "success": false,
+  "message": "Property not found",
+  "error_code": 1500,
+  "data": null
+}
+```
+
+**Error — Area not found (404):**
+
+```json
+{
+  "success": false,
+  "message": "Area not found",
+  "error_code": 1400,
+  "data": null
+}
+```
+
+**Error — Invalid amenities (400):**
+
+```json
+{
+  "success": false,
+  "message": "Invalid amenities structure for the specified property type",
+  "error_code": 1503,
+  "data": null
+}
+```
+
+**Error — Not authorized (403):**
+
+```json
+{
+  "success": false,
+  "message": "You do not have permission to update this property",
+  "error_code": 1003,
+  "data": null
+}
+```
+
+---
+
+### 6.2 Add Media to Property
 
 ### `POST /properties/:id/media`
 
@@ -1322,7 +1425,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-### 6.2 Remove Media from Property
+### 6.3 Remove Media from Property
 
 ### `DELETE /properties/media/:mediaId`
 
@@ -1426,15 +1529,17 @@ Authorization: Bearer <access_token>
 14. **List Areas** — View all seeded areas via `GET /areas` (no auth needed)
 15. **Get Area Details** — View a single area via `GET /areas/:id` (no auth needed)
 16. **Get Area Children** — View sub-areas via `GET /areas/:id/children` (no auth needed)
-17. **Add Property Media** — Upload an image to a property via `POST /properties/:id/media` (multipart form-data with `file`, `media_type`, `display_order`)
-18. **Add Another Image** — Upload a second image with `display_order: 1` to the same property
-19. **Delete Property Media** — Remove a media item via `DELETE /properties/media/:mediaId` (verifies Cloudinary cleanup)
-20. **Upload Invalid File Type** — Try uploading a `.pdf` file (expects error code 1511)
-21. **Upload Oversized File** — Try uploading a file > 10 MB (expects error code 1512)
-22. **Unauthorized Media Access** — Try uploading/deleting media as a non-owner (expects 403)
+17. **Create a Property (Draft)** — Use `POST /properties` with just `area_id`. Expects `draft` status (missing required fields).
+18. **Update & Auto-Promote to Pending** — Use `POST /properties` with same `property_id`, now including `title`, `type`, `listing_type`, `price`. Expects `pending` status.
+19. **Add Property Media** — Upload an image to a property via `POST /properties/:id/media` (multipart form-data with `file`, `media_type`, `display_order`)
+20. **Add Another Image** — Upload a second image with `display_order: 1` to the same property
+21. **Delete Property Media** — Remove a media item via `DELETE /properties/media/:mediaId` (verifies Cloudinary cleanup)
+22. **Upload Invalid File Type** — Try uploading a `.pdf` file (expects error code 1511)
+23. **Upload Oversized File** — Try uploading a file > 10 MB (expects error code 1512)
+24. **Unauthorized Media Access** — Try uploading/deleting media as a non-owner (expects 403)
 
 > **For Roles & Permissions**, you'll need to insert roles/permissions directly into the database first (there's no seed data). Use raw SQL or a Prisma script to create roles and permissions before testing those endpoints.
 >
 > **For Areas**, seed data is available. Run `npm run seed:areas` to populate 31 Dhaka areas (10 top-level + 21 children). Read endpoints require no authentication. Write endpoints (create/update/delete) require a JWT with the `manage_areas` permission.
 >
-> **For Property Media**, you'll need to create a property first (there's no seed data for properties). Use `POST /properties` with valid `area_id`, `title`, `type`, `listing_type`, and `price`. Property create requires authentication. Then use the property ID to test media upload/delete. Cloudinary environment variables (`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`) must be set in `.env` for media uploads to work.
+> **For Property Media**, use the `POST /properties` endpoint to create a property first (no seed data for properties). You can create a draft with just `area_id`, then later update it with full details via the same endpoint by including the `property_id`. Property operations require authentication. Then use the property ID to test media upload/delete. Cloudinary environment variables (`CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`) must be set in `.env` for media uploads to work.

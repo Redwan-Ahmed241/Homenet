@@ -7,6 +7,8 @@ import {
   Param,
   Body,
   Query,
+  HttpCode,
+  HttpStatus,
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
@@ -14,8 +16,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { Throttle } from '@nestjs/throttler';
 import { PropertyService } from './property.service.js';
-import { CreatePropertyDto } from './dto/create-property.dto.js';
-import { UpdatePropertyDto } from './dto/update-property.dto.js';
+import { UpsertPropertyDto } from './dto/upsert-property.dto.js';
 import { PropertyQueryDto } from './dto/property-query.dto.js';
 import { CreatePropertyMediaDto } from './dto/create-property-media.dto.js';
 import { Public } from '../../common/decorators/public.decorator.js';
@@ -64,23 +65,28 @@ export class PropertyController {
 
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post()
-  create(
-    @Body() dto: CreatePropertyDto,
+  upsert(
+    @Body() dto: UpsertPropertyDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.propertyService.create(dto, user.id);
+    return this.propertyService.upsert(dto, user.id);
   }
 
+  /**
+   * @deprecated Use POST /properties with property_id in body instead.
+   * Kept for backward compatibility with existing clients.
+   */
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Patch(':id')
   update(
     @Param('id') id: string,
-    @Body() dto: UpdatePropertyDto,
+    @Body() dto: UpsertPropertyDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.propertyService.update(id, dto, user.id, false);
+    return this.propertyService.upsert({ ...dto, property_id: id }, user.id);
   }
 
+  @HttpCode(HttpStatus.ACCEPTED)
   @Throttle({ default: { limit: 10, ttl: 60000 } })
   @Post(':id/submit')
   submitForVerification(
@@ -127,10 +133,10 @@ export class PropertyController {
   @Patch(':id/admin')
   adminUpdate(
     @Param('id') id: string,
-    @Body() dto: UpdatePropertyDto,
+    @Body() dto: UpsertPropertyDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.propertyService.update(id, dto, user.id, true);
+    return this.propertyService.upsert({ ...dto, property_id: id }, user.id, true);
   }
 
   @Permissions('manage_properties')

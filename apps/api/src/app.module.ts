@@ -15,9 +15,18 @@ import { AppController } from './app.controller.js';
 import { AppService } from './app.service.js';
 import { LoggerModule } from './common/logger/logger.module.js';
 import { CacheServiceModule } from './common/cache/cache.module.js';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { BackgroundTaskModule } from './infrastructure/background-task/background-task.module.js';
+import { NotificationModule } from './infrastructure/notification/notification.module.js';
+import { VerificationModule } from './modules/verification/verification.module.js';
+import { EventsModule } from './infrastructure/events/events.module.js';
 
 @Module({
   imports: [
+    EventEmitterModule.forRoot(),
+    BackgroundTaskModule,
+    NotificationModule,
+    EventsModule,
     ConfigModule.forRoot({ isGlobal: true }),
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
@@ -38,6 +47,7 @@ import { CacheServiceModule } from './common/cache/cache.module.js';
     RoleModule,
     AreaModule,
     PropertyModule,
+    VerificationModule,
   ],
   controllers: [AppController],
   providers: [

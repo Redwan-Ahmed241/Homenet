@@ -165,12 +165,6 @@ model UserAsset {
   @@index([source])
 }
 
-
-
-// ============================================================
-// ENUMS
-// ============================================================
-
 enum PropertyType {
   residential
   commercial
@@ -195,10 +189,6 @@ enum MediaType {
   image
   video
 }
-
-// ============================================================
-// MODELS
-// ============================================================
 
 model Property {
   id               String         @id @default(uuid())
@@ -229,6 +219,7 @@ model Property {
   user          User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
   area          Area              @relation(fields: [area_id], references: [id], onDelete: Restrict)
   media         PropertyMedia[]
+  verification  Verification?
 
   // Indexes
   @@index([user_id])
@@ -256,4 +247,31 @@ model PropertyMedia {
   // Indexes
   @@index([property_id])
   @@index([display_order])
+}
+
+// ============================================================
+// Verification
+// ============================================================
+
+enum VerificationStatus {
+  pending
+  verified
+  rejected
+}
+
+model Verification {
+  id          String             @id @default(uuid())
+  property_id String             @unique
+  status      VerificationStatus @default(pending)
+  notes       String?
+  verified_at DateTime?
+  created_at  DateTime           @default(now())
+  updated_at  DateTime           @updatedAt
+
+  // Relations
+  property Property @relation(fields: [property_id], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([status])
+  @@index([property_id])
 }

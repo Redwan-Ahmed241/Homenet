@@ -1,21 +1,25 @@
 import {
-  IsNotEmpty,
   IsOptional,
   IsString,
   IsEnum,
   IsNumber,
   IsUrl,
+  IsUUID,
   MaxLength,
   Min,
   IsObject,
 } from 'class-validator';
 import { Transform, Type } from 'class-transformer';
-import { PropertyType, ListingType } from '@prisma/client';
+import { PropertyType, ListingType, PropertyStatus } from '@prisma/client';
 
-export class CreatePropertyDto {
-  @IsString()
-  @IsNotEmpty()
-  area_id!: string;
+export class UpsertPropertyDto {
+  @IsOptional()
+  @IsUUID()
+  property_id?: string;
+
+  @IsOptional()
+  @IsUUID()
+  area_id?: string;
 
   @IsOptional()
   @IsString()
@@ -83,4 +87,8 @@ export class CreatePropertyDto {
   @IsOptional()
   @IsUrl()
   virtual_tour_url?: string;
+
+  @IsOptional()
+  @IsEnum(PropertyStatus)
+  status?: PropertyStatus;
 }

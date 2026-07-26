@@ -59,7 +59,7 @@ export class AuthService {
     const passwordHash = await bcrypt.hash(dto.password, this.BCRYPT_ROUNDS);
 
     const user = await this.authRepo.createUserWithIdentity(
-      { full_name: dto.full_name, avatar_url: dto.avatar_url },
+      { full_name: dto.full_name },
       { provider: 'LOCAL', email: dto.email.toLowerCase(), password_hash: passwordHash },
     );
 

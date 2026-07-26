@@ -43,7 +43,7 @@ export interface IAuthRepository {
   findIdentityWithUser(provider: AuthProvider, email: string): Promise<AuthIdentityWithUser | null>;
 
   createUserWithIdentity(
-    userData: { full_name: string; avatar_url?: string | null },
+    userData: { full_name: string },
     identityData: { provider: AuthProvider; email: string; password_hash: string },
   ): Promise<{ id: string; full_name: string; avatar_url: string | null }>;
 

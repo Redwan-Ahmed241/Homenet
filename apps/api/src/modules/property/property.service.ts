@@ -5,13 +5,16 @@ import { CACHE_TTL } from '../../common/cache/cache.service.interface.js';
 import { LoggerService } from '../../common/logger/logger.service.js';
 import { AppException } from '../../common/errors/app.exception.js';
 import { PROPERTY_ERRORS } from '../../common/errors/error-codes.js';
-import { CreatePropertyDto } from './dto/create-property.dto.js';
-import { UpdatePropertyDto } from './dto/update-property.dto.js';
+import { AREA_ERRORS } from '../../common/errors/error-codes.js';
+import type { VerificationStatus } from '@prisma/client';
+import { UpsertPropertyDto } from './dto/upsert-property.dto.js';
 import { PropertyQueryDto } from './dto/property-query.dto.js';
 import { CreatePropertyMediaDto } from './dto/create-property-media.dto.js';
 import type { IPropertyRepository } from './interfaces/property-repository.interface.js';
 import { UPLOAD_FOLDERS, ALLOWED_MIMETYPES, UPLOAD_LIMITS_MB } from '../../common/upload/upload.constants.js';
 import type { IUploadService } from '../../common/upload/interfaces/upload.service.interface.js';
+import { BACKGROUND_TASK_SERVICE } from '../../infrastructure/background-task/background-task.constants.js';
+import type { IBackgroundTaskService } from '../../infrastructure/background-task/interfaces/background-task.service.interface.js';
 
 @Injectable()
 export class PropertyService {
@@ -21,6 +24,8 @@ export class PropertyService {
     @Inject('ICacheService') private readonly cacheService: ICacheService,
     @Inject('IUploadService') private readonly uploadService: IUploadService,
     private readonly configService: ConfigService,
+    @Inject(BACKGROUND_TASK_SERVICE)
+    private readonly backgroundTaskService: IBackgroundTaskService,
   ) {}
 
   private generateCacheKey(prefix: string, data: any): string {
@@ -113,24 +118,116 @@ export class PropertyService {
     'title', 'type', 'listing_type', 'price',
   ];
 
-  private computeInitialStatus(dto: CreatePropertyDto): 'draft' | 'pending' {
+  private computeStatus(data: Record<string, unknown>): 'draft' | 'pending' {
     const allPresent = this.REQUIRED_FIELDS.every((field) => {
-      const val = (dto as unknown as Record<string, unknown>)[field];
+      const val = data[field];
       return val !== undefined && val !== null && val !== '';
     });
     return allPresent ? 'pending' : 'draft';
   }
 
-  async create(dto: CreatePropertyDto, userId: string) {
-    // Validate area exists
+  async upsert(dto: UpsertPropertyDto, userId: string, isAdmin: boolean = false) {
+    if (dto.property_id) {
+      // ── UPDATE PATH ──
+      const existing = await this.propertyRepo.findById(dto.property_id);
+
+      if (!existing) {
+        this.logger.warn(`Property not found: ${dto.property_id}`, {
+          fileName: 'property.service.ts',
+          functionName: 'upsert',
+          lineNumber: 161,
+        });
+        throw new AppException(PROPERTY_ERRORS.PROPERTY_NOT_FOUND);
+      }
+
+      if (existing.user_id !== userId && !isAdmin) {
+        this.logger.warn(`User ${userId} attempted to update property ${dto.property_id} without permission`, {
+          fileName: 'property.service.ts',
+          functionName: 'upsert',
+          lineNumber: 168,
+        });
+        throw new ForbiddenException('You do not have permission to update this property');
+      }
+
+      if (dto.area_id) {
+        const area = await this.propertyRepo.findAreaById(dto.area_id);
+        if (!area) {
+          throw new AppException(AREA_ERRORS.AREA_NOT_FOUND);
+        }
+      }
+
+      if (dto.amenities && Object.keys(dto.amenities).length > 0) {
+        const type = dto.type ?? existing.type;
+        const valid = this.validateAmenities(type, dto.amenities);
+        if (!valid) {
+          this.logger.warn(`Invalid amenities structure for property type ${type}`, {
+            fileName: 'property.service.ts',
+            functionName: 'upsert',
+            lineNumber: 188,
+          });
+          throw new AppException(PROPERTY_ERRORS.PROPERTY_INVALID_AMENITIES);
+        }
+      }
+
+      const updateData: Record<string, any> = {};
+      if (dto.title !== undefined) updateData.title = dto.title;
+      if (dto.description !== undefined) updateData.description = dto.description;
+      if (dto.type !== undefined) updateData.type = dto.type;
+      if (dto.subtype !== undefined) updateData.subtype = dto.subtype;
+      if (dto.listing_type !== undefined) updateData.listing_type = dto.listing_type;
+      if (dto.price !== undefined) updateData.price = dto.price;
+      if (dto.price_currency !== undefined) updateData.price_currency = dto.price_currency;
+      if (dto.area_size !== undefined) updateData.area_size = dto.area_size;
+      if (dto.area_unit !== undefined) updateData.area_unit = dto.area_unit;
+      if (dto.location_lat !== undefined) updateData.location_lat = dto.location_lat;
+      if (dto.location_lng !== undefined) updateData.location_lng = dto.location_lng;
+      if (dto.address !== undefined) updateData.address = dto.address;
+      if (dto.amenities !== undefined) updateData.amenities = dto.amenities;
+      if (dto.virtual_tour_url !== undefined) updateData.virtual_tour_url = dto.virtual_tour_url;
+      if (dto.area_id !== undefined) updateData.area = { connect: { id: dto.area_id } };
+
+      // Allow admin to directly override status
+      if (dto.status !== undefined && isAdmin) {
+        updateData.status = dto.status;
+      } else {
+        // Re-compute status based on merged existing + new data
+        const merged: Record<string, unknown> = {};
+        for (const field of this.REQUIRED_FIELDS) {
+          merged[field] = (dto as unknown as Record<string, unknown>)[field]
+            ?? (existing as unknown as Record<string, unknown>)[field];
+        }
+
+        const newStatus = this.computeStatus(merged);
+        if (newStatus !== existing.status) {
+          updateData.status = newStatus;
+        }
+      }
+
+      const updated = await this.propertyRepo.update(dto.property_id, updateData);
+
+      await this.invalidateAll(dto.property_id);
+      return updated;
+    }
+
+    // ── CREATE PATH ──
+    if (!dto.area_id) {
+      this.logger.warn('area_id is required for property creation', {
+        fileName: 'property.service.ts',
+        functionName: 'upsert',
+        lineNumber: 213,
+      });
+      throw new AppException(PROPERTY_ERRORS.PROPERTY_MISSING_AREA);
+    }
+
     const area = await this.propertyRepo.findAreaById(dto.area_id);
+
     if (!area) {
       this.logger.warn(`Area not found: ${dto.area_id}`, {
         fileName: 'property.service.ts',
-        functionName: 'create',
-        lineNumber: 130,
+        functionName: 'upsert',
+        lineNumber: 223,
       });
-      throw new AppException(PROPERTY_ERRORS.PROPERTY_NOT_FOUND);
+      throw new AppException(AREA_ERRORS.AREA_NOT_FOUND);
     }
 
     // Validate amenities only when both type and amenities are provided
@@ -139,14 +236,14 @@ export class PropertyService {
       if (!valid) {
         this.logger.warn(`Invalid amenities structure for property type ${dto.type}`, {
           fileName: 'property.service.ts',
-          functionName: 'create',
+          functionName: 'upsert',
           lineNumber: 142,
         });
         throw new AppException(PROPERTY_ERRORS.PROPERTY_INVALID_AMENITIES);
       }
     }
 
-    const status = this.computeInitialStatus(dto);
+    const status = this.computeStatus(dto as unknown as Record<string, unknown>);
 
     const property = await this.propertyRepo.create({
       user_id: userId,
@@ -170,71 +267,6 @@ export class PropertyService {
 
     await this.invalidateListCache();
     return property;
-  }
-
-  async update(id: string, dto: UpdatePropertyDto, userId: string, isAdmin: boolean) {
-    const property = await this.propertyRepo.findById(id);
-
-    if (!property) {
-      this.logger.warn(`Property not found: ${id}`, {
-        fileName: 'property.service.ts',
-        functionName: 'update',
-        lineNumber: 161,
-      });
-      throw new AppException(PROPERTY_ERRORS.PROPERTY_NOT_FOUND);
-    }
-
-    if (property.user_id !== userId && !isAdmin) {
-      this.logger.warn(`User ${userId} attempted to update property ${id} without permission`, {
-        fileName: 'property.service.ts',
-        functionName: 'update',
-        lineNumber: 168,
-      });
-      throw new ForbiddenException('You do not have permission to update this property');
-    }
-
-    if (dto.area_id) {
-      const area = await this.propertyRepo.findAreaById(dto.area_id);
-      if (!area) {
-        throw new AppException(PROPERTY_ERRORS.PROPERTY_NOT_FOUND);
-      }
-    }
-
-    if (dto.amenities && Object.keys(dto.amenities).length > 0) {
-      const type = dto.type ?? property.type;
-      const valid = this.validateAmenities(type, dto.amenities);
-      if (!valid) {
-        this.logger.warn(`Invalid amenities structure for property type ${type}`, {
-          fileName: 'property.service.ts',
-          functionName: 'update',
-          lineNumber: 188,
-        });
-        throw new AppException(PROPERTY_ERRORS.PROPERTY_INVALID_AMENITIES);
-      }
-    }
-
-    const updateData: Record<string, any> = {};
-    if (dto.title !== undefined) updateData.title = dto.title;
-    if (dto.description !== undefined) updateData.description = dto.description;
-    if (dto.type !== undefined) updateData.type = dto.type;
-    if (dto.subtype !== undefined) updateData.subtype = dto.subtype;
-    if (dto.listing_type !== undefined) updateData.listing_type = dto.listing_type;
-    if (dto.price !== undefined) updateData.price = dto.price;
-    if (dto.price_currency !== undefined) updateData.price_currency = dto.price_currency;
-    if (dto.area_size !== undefined) updateData.area_size = dto.area_size;
-    if (dto.area_unit !== undefined) updateData.area_unit = dto.area_unit;
-    if (dto.location_lat !== undefined) updateData.location_lat = dto.location_lat;
-    if (dto.location_lng !== undefined) updateData.location_lng = dto.location_lng;
-    if (dto.address !== undefined) updateData.address = dto.address;
-    if (dto.amenities !== undefined) updateData.amenities = dto.amenities;
-    if (dto.virtual_tour_url !== undefined) updateData.virtual_tour_url = dto.virtual_tour_url;
-    if (dto.area_id !== undefined) updateData.area = { connect: { id: dto.area_id } };
-    if (dto.status !== undefined && isAdmin) updateData.status = dto.status;
-
-    const updated = await this.propertyRepo.update(id, updateData);
-
-    await this.invalidateAll(id);
-    return updated;
   }
 
   async remove(id: string, userId: string, isAdmin: boolean) {
@@ -468,7 +500,7 @@ export class PropertyService {
       this.logger.warn(`Property not found: ${id}`, {
         fileName: 'property.service.ts',
         functionName: 'submitForVerification',
-        lineNumber: 430,
+        lineNumber: 435,
       });
       throw new AppException(PROPERTY_ERRORS.PROPERTY_NOT_FOUND);
     }
@@ -477,16 +509,16 @@ export class PropertyService {
       this.logger.warn(`User ${userId} attempted to submit property ${id} without ownership`, {
         fileName: 'property.service.ts',
         functionName: 'submitForVerification',
-        lineNumber: 437,
+        lineNumber: 442,
       });
       throw new ForbiddenException('You do not have permission to submit this property');
     }
 
-    if (property.status !== 'draft') {
-      this.logger.warn(`Cannot submit property ${id} with status "${property.status}" — must be draft`, {
+    if (property.status !== 'pending') {
+      this.logger.warn(`Cannot submit property ${id} with status "${property.status}" — must be pending`, {
         fileName: 'property.service.ts',
         functionName: 'submitForVerification',
-        lineNumber: 444,
+        lineNumber: 449,
       });
       throw new AppException(PROPERTY_ERRORS.PROPERTY_CANNOT_SUBMIT);
     }
@@ -494,28 +526,98 @@ export class PropertyService {
     // Validate all required fields are filled before submission
     const missingFields: string[] = [];
     if (!property.title) missingFields.push('title');
+    if (!property.description) missingFields.push('description');
+    if (!property.type) missingFields.push('type');
     if (!property.listing_type) missingFields.push('listing_type');
     if (!property.price || property.price <= 0) missingFields.push('price');
+    if (!property.area_id) missingFields.push('area_id');
+    if (!property.area_size || property.area_size <= 0) missingFields.push('area_size');
+    if (!property.area_unit) missingFields.push('area_unit');
+    if (!property.address) missingFields.push('address');
+    if (!property.location_lat) missingFields.push('location_lat');
+    if (!property.location_lng) missingFields.push('location_lng');
+
+    // Check at least 1 media item
+    const mediaCount = await this.propertyRepo.countMediaTotal(id);
+    if (mediaCount === 0) missingFields.push('media (at least 1 required)');
 
     if (missingFields.length > 0) {
-      this.logger.warn(`Cannot submit property ${id} — missing required fields: ${missingFields.join(', ')}`, {
-        fileName: 'property.service.ts',
-        functionName: 'submitForVerification',
-        lineNumber: 460,
-      });
-      throw new AppException(PROPERTY_ERRORS.PROPERTY_CANNOT_SUBMIT);
+      this.logger.warn(
+        `Cannot submit property ${id} — missing required fields: ${missingFields.join(', ')}`,
+        {
+          fileName: 'property.service.ts',
+          functionName: 'submitForVerification',
+          lineNumber: 478,
+        },
+      );
+      throw new AppException(
+        PROPERTY_ERRORS.PROPERTY_CANNOT_SUBMIT,
+        `Missing required fields: ${missingFields.join(', ')}`,
+      );
     }
 
-    const updated = await this.propertyRepo.update(id, { status: 'pending' });
+    // Create verification record
+    await this.createVerification(id);
+
+    // Enqueue via BackgroundTaskService — no knowledge of setTimeout or BullMQ
+    await this.backgroundTaskService.enqueueVerification(id);
 
     await this.invalidateAll(id);
 
     this.logger.info(`Property ${id} submitted for verification`, {
       fileName: 'property.service.ts',
       functionName: 'submitForVerification',
-      lineNumber: 470,
+      lineNumber: 497,
     });
 
-    return updated;
+    return { id, status: 'pending' };
+  }
+
+  async createVerification(propertyId: string) {
+    const property = await this.propertyRepo.findById(propertyId);
+
+    if (!property) {
+      this.logger.warn(`createVerification failed — property not found: ${propertyId}`, {
+        fileName: 'property.service.ts',
+        functionName: 'createVerification',
+        lineNumber: 480,
+      });
+      throw new AppException(PROPERTY_ERRORS.PROPERTY_NOT_FOUND);
+    }
+
+    const verification = await this.propertyRepo.createVerification(propertyId);
+
+    this.logger.info(`Verification record created for property: ${propertyId}`, {
+      fileName: 'property.service.ts',
+      functionName: 'createVerification',
+      lineNumber: 490,
+    });
+
+    return verification;
+  }
+
+  async updateVerificationStatus(
+    propertyId: string,
+    status: VerificationStatus,
+    notes?: string,
+  ) {
+    const verification = await this.propertyRepo.updateVerificationStatus(
+      propertyId,
+      status,
+      notes,
+    );
+
+    await this.invalidateDetailCache(propertyId);
+
+    this.logger.info(
+      `Verification status → ${status} for property: ${propertyId}`,
+      {
+        fileName: 'property.service.ts',
+        functionName: 'updateVerificationStatus',
+        lineNumber: 510,
+      },
+    );
+
+    return verification;
   }
 }

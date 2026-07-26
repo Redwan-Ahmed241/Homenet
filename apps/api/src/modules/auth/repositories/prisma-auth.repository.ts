@@ -48,14 +48,13 @@ export class PrismaAuthRepository implements IAuthRepository {
   }
 
   async createUserWithIdentity(
-    userData: { full_name: string; avatar_url?: string | null },
+    userData: { full_name: string },
     identityData: { provider: AuthProvider; email: string; password_hash: string },
   ): Promise<{ id: string; full_name: string; avatar_url: string | null }> {
     const user = await this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const newUser = await tx.user.create({
         data: {
           full_name: userData.full_name,
-          avatar_url: userData.avatar_url ?? null,
         },
       });
 

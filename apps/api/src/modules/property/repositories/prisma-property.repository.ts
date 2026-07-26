@@ -12,6 +12,7 @@ import type {
   PaginatedResult,
   PropertyMedia,
 } from '../interfaces/property-repository.interface.js';
+import type { Verification, VerificationStatus } from '@prisma/client';
 
 const propertyPublicSelect = {
   id: true,
@@ -236,10 +237,40 @@ export class PrismaPropertyRepository implements IPropertyRepository {
     });
   }
 
-  async findById(id: string): Promise<{ id: string; user_id: string; type: string; status: string; title: string; listing_type: string; price: number } | null> {
+  async findById(id: string): Promise<{
+    id: string;
+    user_id: string;
+    type: string;
+    status: string;
+    title: string;
+    description: string | null;
+    listing_type: string;
+    price: number;
+    area_id: string;
+    area_size: number | null;
+    area_unit: string | null;
+    address: string | null;
+    location_lat: number | null;
+    location_lng: number | null;
+  } | null> {
     const property = await this.prisma.property.findUnique({
       where: { id },
-      select: { id: true, user_id: true, type: true, status: true, title: true, listing_type: true, price: true },
+      select: {
+        id: true,
+        user_id: true,
+        type: true,
+        status: true,
+        title: true,
+        description: true,
+        listing_type: true,
+        price: true,
+        area_id: true,
+        area_size: true,
+        area_unit: true,
+        address: true,
+        location_lat: true,
+        location_lng: true,
+      },
     });
 
     return property;
@@ -429,6 +460,14 @@ export class PrismaPropertyRepository implements IPropertyRepository {
     return count;
   }
 
+  async countMediaTotal(propertyId: string): Promise<number> {
+    const count = await this.prisma.propertyMedia.count({
+      where: { property_id: propertyId },
+    });
+
+    return count;
+  }
+
   async findMediaById(mediaId: string): Promise<{
     id: string;
     property_id: string;
@@ -563,6 +602,62 @@ export class PrismaPropertyRepository implements IPropertyRepository {
       limit: query.limit,
       total_pages: Math.ceil(total / query.limit),
     };
+  }
+
+  async createVerification(propertyId: string): Promise<Verification> {
+    const verification = await this.prisma.verification.create({
+      data: {
+        property_id: propertyId,
+        status: 'pending',
+      },
+    });
+
+    this.logger.debug(`Verification created for property: ${propertyId}`, {
+      fileName: 'prisma-property.repository.ts',
+      functionName: 'createVerification',
+      lineNumber: 490,
+    });
+
+    return verification;
+  }
+
+  async updateVerificationStatus(
+    propertyId: string,
+    status: VerificationStatus,
+    notes?: string,
+  ): Promise<Verification> {
+    const verification = await this.prisma.verification.update({
+      where: { property_id: propertyId },
+      data: {
+        status,
+        notes: notes ?? null,
+        verified_at: status === 'verified' ? new Date() : null,
+      },
+    });
+
+    this.logger.debug(
+      `Verification status updated to ${status} for property: ${propertyId}`,
+      {
+        fileName: 'prisma-property.repository.ts',
+        functionName: 'updateVerificationStatus',
+        lineNumber: 515,
+      },
+    );
+
+    return verification;
+  }
+
+  async updateStatus(propertyId: string, status: string): Promise<void> {
+    await this.prisma.property.update({
+      where: { id: propertyId },
+      data: { status: status as any },
+    });
+
+    this.logger.debug(`Property ${propertyId} status updated to ${status}`, {
+      fileName: 'prisma-property.repository.ts',
+      functionName: 'updateStatus',
+      lineNumber: 528,
+    });
   }
 
   private calculateDistance(
