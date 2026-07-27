@@ -18,7 +18,7 @@ export class UpsertPropertyDto {
   property_id?: string;
 
   @IsOptional()
-  @IsUUID()
+  @IsString()
   area_id?: string;
 
   @IsOptional()
