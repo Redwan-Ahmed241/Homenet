@@ -30,13 +30,13 @@ removeUser() { ... }
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `GET` | `/roles` | List all roles with permissions |
-| `GET` | `/roles/:id` | Get a single role |
-| `GET` | `/roles/user/:userId` | Get roles assigned to a user |
-| `POST` | `/roles/assign` | Assign a role to a user |
-| `DELETE` | `/roles/revoke` | Remove a role from a user |
-| `POST` | `/roles/:roleId/permissions` | Attach a permission to a role |
-| `DELETE` | `/roles/:roleId/permissions/:permissionId` | Detach a permission from a role |
+| `GET` | `/v1/roles` | List all roles with permissions |
+| `GET` | `/v1/roles/:id` | Get a single role |
+| `GET` | `/v1/roles/user/:userId` | Get roles assigned to a user |
+| `POST` | `/v1/roles/assign` | Assign a role to a user |
+| `DELETE` | `/v1/roles/revoke` | Remove a role from a user |
+| `POST` | `/v1/roles/:roleId/permissions` | Attach a permission to a role |
+| `DELETE` | `/v1/roles/:roleId/permissions/:permissionId` | Detach a permission from a role |
 
 ### 4. How it works
 
@@ -52,8 +52,8 @@ User ──has──> Role(s) ──has──> Permission(s)
 ### 5. Quick setup for new features
 
 1. Create the permission in the DB via Prisma
-2. Assign it to a role via `POST /roles/:roleId/permissions`
-3. Assign the role to a user via `POST /roles/assign`
+2. Assign it to a role via `POST /v1/roles/:roleId/permissions`
+3. Assign the role to a user via `POST /v1/roles/assign`
 4. Protect the route with `@Permissions('permission_name')`
 
 ### 6. Permission names (convention)

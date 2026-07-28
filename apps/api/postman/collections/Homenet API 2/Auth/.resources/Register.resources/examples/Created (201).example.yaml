@@ -1,0 +1,25 @@
+$kind: http-example
+request:
+  url: ""
+  method: GET
+response:
+  statusCode: 201
+  statusText: OK
+  body:
+    type: text
+    content: |-
+      {
+        "success": true,
+        "message": "OK",
+        "data": {
+          "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+          "refresh_token": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+          "user": {
+            "id": "uuid-of-new-user",
+            "full_name": "John Doe",
+            "email": "john@example.com",
+            "avatar_url": null
+          }
+        }
+      }
+order: 1000

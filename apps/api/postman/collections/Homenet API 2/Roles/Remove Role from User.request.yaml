@@ -1,0 +1,16 @@
+$kind: http-request
+description: Revokes a role from a user. Requires manage_roles permission.
+url: http://localhost:3000/v1/roles/revoke
+method: DELETE
+headers:
+  Content-Type: application/json
+  Authorization: Bearer <access_token>
+body:
+  type: json
+  content: |-
+    {
+      "userId": "uuid-of-user",
+      "roleId": "uuid-of-role"
+    }
+examples: ./.resources/Remove Role from User.resources/examples
+order: 5000

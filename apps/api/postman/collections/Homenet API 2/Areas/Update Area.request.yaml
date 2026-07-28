@@ -1,0 +1,17 @@
+$kind: http-request
+description: Updates an existing area. All fields optional. Requires
+  manage_areas permission.
+url: http://localhost:3000/v1/areas/{{areaId}}
+method: PATCH
+headers:
+  Content-Type: application/json
+  Authorization: Bearer <access_token>
+body:
+  type: json
+  content: |-
+    {
+      "name": "Updated Area Name",
+      "city": "Chittagong"
+    }
+examples: ./.resources/Update Area.resources/examples
+order: 5000

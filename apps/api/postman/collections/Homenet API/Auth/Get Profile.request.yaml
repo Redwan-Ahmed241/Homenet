@@ -1,0 +1,11 @@
+$kind: http-request
+name: Get Profile
+description: Returns the currently authenticated user's profile. JWT required.
+url: "{{base_url}}/v1/auth/me"
+method: GET
+auth:
+  type: bearer
+  credentials:
+    token: "{{access_token}}"
+examples: ./.resources/Get Profile.resources/examples
+order: 5000

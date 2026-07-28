@@ -1,0 +1,36 @@
+$kind: http-request
+description: Creates a new property listing in draft status. JWT required.
+url: http://localhost:3000/v1/properties
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer <access_token>
+body:
+  type: json
+  content: |-
+    {
+      "area_id": "uuid-of-area",
+      "title": "Modern 3BR Apartment in Banani",
+      "description": "A beautiful apartment in the heart of Banani.",
+      "type": "residential",
+      "subtype": "apartment",
+      "listing_type": "rent",
+      "price": 85000,
+      "price_currency": "BDT",
+      "area_size": 1650,
+      "area_unit": "sqft",
+      "location_lat": 23.793,
+      "location_lng": 90.405,
+      "address": "Road 11, Banani, Dhaka",
+      "amenities": {
+        "bedrooms": 3,
+        "bathrooms": 3,
+        "flooring": "tiles",
+        "water_supply": "yes",
+        "gas_connection": "yes",
+        "electricity": "yes"
+      },
+      "virtual_tour_url": "https://tour.example.com/property-123"
+    }
+examples: ./.resources/Create Property.resources/examples
+order: 1000

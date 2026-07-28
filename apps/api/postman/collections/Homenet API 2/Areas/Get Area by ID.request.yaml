@@ -1,0 +1,7 @@
+$kind: http-request
+description: Returns a single area with parent and children details. No
+  authentication required.
+url: http://localhost:3000/v1/areas/{{areaId}}
+method: GET
+examples: ./.resources/Get Area by ID.resources/examples
+order: 2000

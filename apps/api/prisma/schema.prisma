@@ -24,7 +24,9 @@ model User {
 
   auth_identities AuthIdentity[]
   user_roles      UserRole[]
-  refresh_tokens   RefreshToken[]
+  refresh_tokens  RefreshToken[]
+  properties      Property[]
+  user_assets     UserAsset[]
 }
 
 model AuthIdentity {
@@ -127,4 +129,149 @@ model RolePermission {
 
   @@index([role_id])
   @@index([permission_id])
+}
+
+model Area {
+  id             String   @id @default(uuid())
+  name           String
+  parent_area_id String?
+  city           String   @default("Dhaka")
+
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  parent   Area?  @relation("AreaHierarchy", fields: [parent_area_id], references: [id], onDelete: SetNull)
+  children Area[] @relation("AreaHierarchy")
+
+  properties Property[]
+
+  @@index([parent_area_id])
+  @@index([city])
+}
+
+model UserAsset {
+  id         String           @id @default(uuid())
+  user_id    String
+  asset_id   String
+  source     String
+
+  created_at DateTime         @default(now())
+  updated_at DateTime         @updatedAt
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([asset_id])
+  @@index([source])
+}
+
+enum PropertyType {
+  residential
+  commercial
+  land
+  parking
+}
+
+enum ListingType {
+  sale
+  rent
+}
+
+enum PropertyStatus {
+  draft
+  active
+  pending
+  sold
+  archived
+}
+
+enum MediaType {
+  image
+  video
+}
+
+model Property {
+  id               String         @id @default(uuid())
+  user_id          String
+  area_id          String
+  title            String
+  description      String?
+  type             PropertyType   @default(residential)
+  subtype          String?
+  listing_type     ListingType    @default(sale)
+  price            Float
+  price_currency   String         @default("BDT")
+  area_size        Float?
+  area_unit        String?        @default("sqft")
+  location_lat     Float?
+  location_lng     Float?
+  address          String?
+  amenities        Json?
+  status           PropertyStatus @default(draft)
+  is_verified      Boolean        @default(false)
+  virtual_tour_url String?
+  view_count       Int            @default(0)
+  published_at     DateTime?
+  created_at       DateTime       @default(now())
+  updated_at       DateTime       @updatedAt
+
+  // Relations
+  user          User              @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  area          Area              @relation(fields: [area_id], references: [id], onDelete: Restrict)
+  media         PropertyMedia[]
+  verification  Verification?
+
+  // Indexes
+  @@index([user_id])
+  @@index([area_id])
+  @@index([status])
+  @@index([type])
+  @@index([listing_type])
+  @@index([price])
+  @@index([published_at])
+}
+
+model PropertyMedia {
+  id             String     @id @default(uuid())
+  property_id    String
+  media_type     MediaType  @default(image)
+  url            String     // Cloudinary secure_url
+  public_id      String     // Cloudinary public_id — required for delete
+  thumbnail_url  String?
+  display_order  Int        @default(0)
+  created_at     DateTime   @default(now())
+
+  // Relations
+  property       Property   @relation(fields: [property_id], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([property_id])
+  @@index([display_order])
+}
+
+// ============================================================
+// Verification
+// ============================================================
+
+enum VerificationStatus {
+  pending
+  verified
+  rejected
+}
+
+model Verification {
+  id          String             @id @default(uuid())
+  property_id String             @unique
+  status      VerificationStatus @default(pending)
+  notes       String?
+  verified_at DateTime?
+  created_at  DateTime           @default(now())
+  updated_at  DateTime           @updatedAt
+
+  // Relations
+  property Property @relation(fields: [property_id], references: [id], onDelete: Cascade)
+
+  // Indexes
+  @@index([status])
+  @@index([property_id])
 }

@@ -6,6 +6,7 @@ import { AuthController } from './auth.controller.js';
 import { AuthService } from './auth.service.js';
 import { LocalStrategy } from './strategies/local.strategy.js';
 import { JwtStrategy } from './strategies/jwt.strategy.js';
+import { PrismaAuthRepository } from './repositories/prisma-auth.repository.js';
 
 @Module({
   imports: [
@@ -22,7 +23,12 @@ import { JwtStrategy } from './strategies/jwt.strategy.js';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy],
+  providers: [
+    AuthService,
+    LocalStrategy,
+    JwtStrategy,
+    { provide: 'IAuthRepository', useClass: PrismaAuthRepository },
+  ],
   exports: [AuthService],
 })
 export class AuthModule {}

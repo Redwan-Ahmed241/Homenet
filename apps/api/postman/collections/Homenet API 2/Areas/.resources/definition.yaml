@@ -1,0 +1,4 @@
+$kind: collection
+description: Area/location management endpoints. Public read endpoints require
+  no auth. Write endpoints require JWT + manage_areas permission.
+order: 5000

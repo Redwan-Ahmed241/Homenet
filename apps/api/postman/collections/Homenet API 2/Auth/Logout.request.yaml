@@ -1,0 +1,15 @@
+$kind: http-request
+description: Revokes the provided refresh token. JWT required.
+url: http://localhost:3000/v1/auth/logout
+method: POST
+headers:
+  Content-Type: application/json
+  Authorization: Bearer <access_token>
+body:
+  type: json
+  content: |-
+    {
+      "refresh_token": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+    }
+examples: ./.resources/Logout.resources/examples
+order: 4000

@@ -1,0 +1,9 @@
+$kind: http-request
+description: Returns all roles with their associated permissions. Requires
+  view_roles permission.
+url: http://localhost:3000/v1/roles
+method: GET
+headers:
+  Authorization: Bearer <access_token>
+examples: ./.resources/List All Roles.resources/examples
+order: 1000

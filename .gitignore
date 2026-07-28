@@ -8,7 +8,6 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-docs
 # Runtime data
 pids
 *.pid
@@ -62,3 +61,8 @@ jest-html-reporters-*.html
 
 # Misc
 *.tgz
+docs/01_technical_development_guide.tex
+docs/02_client_proposal.tex
+docs/03_investor_pitch.tex
+Example_bill.tex
+invoices

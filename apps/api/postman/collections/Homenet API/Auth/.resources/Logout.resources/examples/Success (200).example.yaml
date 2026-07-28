@@ -1,0 +1,25 @@
+$kind: http-example
+request:
+  url: http://localhost:3000/v1/auth/logout
+  method: POST
+  headers:
+    Content-Type: application/json
+    Authorization: Bearer <access_token>
+  body:
+    type: json
+    content: |-
+      {
+        "refresh_token": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      }
+response:
+  statusCode: 200
+  statusText: OK
+  body:
+    type: text
+    content: |-
+      {
+        "success": true,
+        "message": "Logged out successfully",
+        "data": null
+      }
+order: 1000

@@ -1,0 +1,53 @@
+$kind: http-example
+request:
+  url: http://localhost:3000/v1/areas?page=1&limit=20
+  method: GET
+  queryParams:
+    - key: page
+      value: "1"
+      description: "Page number (default: 1)"
+    - key: limit
+      value: "20"
+      description: "Items per page (default: 20, max: 100)"
+    - key: city
+      value: ""
+      disabled: true
+      description: Filter by city name
+    - key: parent_area_id
+      value: ""
+      disabled: true
+      description: Filter by parent area UUID
+    - key: search
+      value: ""
+      disabled: true
+      description: Case-insensitive name search
+response:
+  statusCode: 200
+  statusText: OK
+  body:
+    type: text
+    content: |-
+      {
+        "success": true,
+        "message": "OK",
+        "data": {
+          "items": [
+            {
+              "id": "uuid-of-area",
+              "name": "Gulshan",
+              "parent_area_id": null,
+              "city": "Dhaka",
+              "created_at": "2026-07-05T10:00:00.000Z",
+              "updated_at": "2026-07-05T10:00:00.000Z",
+              "_count": {
+                "children": 2
+              }
+            }
+          ],
+          "total": 31,
+          "page": 1,
+          "limit": 20,
+          "total_pages": 2
+        }
+      }
+order: 1000
