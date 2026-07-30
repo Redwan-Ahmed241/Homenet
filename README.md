@@ -35,8 +35,8 @@ The platform uses a **monolithic backend with micro-service readiness**, heavily
 
 ### Core Tech Stack
 - **Backend (API):** Nest.js, TypeScript, PostgreSQL (via Prisma ORM)
-- **Frontend (Web):** Next.js (SEO-optimized web app)
-- **Frontend (Mobile):** React Native (iOS & Android)
+
+- **Frontend :** React Native expo(iOS & Android also web)
 - **Infrastructure:** Docker, Cloudinary (Assets), AWS (planned)
 - **AI/ML Layer:** XGBoost for property valuation modeling, NLP models for natural language search and automated agreement parsing.
 
