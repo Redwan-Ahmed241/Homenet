@@ -67,3 +67,12 @@ docs/03_investor_pitch.tex
 Example_bill.tex
 invoices
 node_modules
+node_modules
+# Keep environment variables out of version control
+.env
+
+/generated/prisma
+server.err
+
+# Keep personal Postman environments out of version control
+postman/environments/*.local.json
