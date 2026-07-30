@@ -1,7 +1,7 @@
 # Homenet — AI-Powered Real Estate Intelligence Platform
 
 ## Overview
-**Homenet** is South Asia's leading property intelligence platform and marketplace, built specifically to transform Bangladesh's real estate market from an opaque, trust-deficit environment into a transparent, data-driven ecosystem.
+**Homenet** is aspiring to be South Asia's leading property intelligence platform and marketplace, built specifically to transform Bangladesh's real estate market from an opaque, trust-deficit environment into a transparent, data-driven ecosystem.
 
 **Core Design Philosophy:**
 > "Simple enough to scale; safe enough to trust."
