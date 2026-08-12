@@ -570,3 +570,46 @@ export class EmailNotificationChannel implements NotificationChannel {
 ```
 
 No changes needed to `NotificationService` — it already iterates all channels.
+
+---
+
+## Review Recommendations (Post-Plan Assessment)
+
+> **Note:** This section is a critical review of the plan above. It does **not** modify the original design — it documents gaps, risks, and recommended fixes to address before or during implementation.
+
+### Overall Verdict
+
+The core architecture is correct and production-quality for a single instance. The `NotificationService` orchestrator + `NotificationChannel` interface eliminates the old circular dependency, SSE is the right choice over WebSocket for unidirectional notifications, and the `@Res()` bypass of `ResponseInterceptor` is correct. However, several gaps around resumability, connection limits, and error handling should be addressed before implementation.
+
+### Issues & Risks
+
+| # | Issue | Severity | Detail |
+|---|---|---|---|
+| 1 | **No `id:` / `Last-Event-ID` resumability** | High | SSE natively supports the `id:` field + `Last-Event-ID` header for gap-free reconnect. The plan ignores this. On reconnect, a notification emitted between disconnect and reconnect could be **lost** (if already marked read) or **duplicated** (replay includes it + live push arrives). |
+| 2 | **Race condition: replay vs live push** | High | If a notification is persisted, then the client connects (replay delivers it), then the live SSE push also delivers it → **duplicate**. Need dedup by notification ID on the client, or skip replay if connection is brand new. |
+| 3 | **No connection limit per user** | Medium | A user can open unlimited SSE connections (multiple tabs, or maliciously), exhausting server memory. Should cap at e.g. 3-5 connections per user, evicting oldest. |
+| 4 | **No backpressure / write-error handling** | Medium | `res.write()` has no try/catch. A slow client or broken pipe could cause unbounded buffering or an unhandled exception crashing the process. Should check `res.write()` return value and handle `EPIPE`. |
+| 5 | **JWT expiry mid-session** | Medium | The plan acknowledges the token can expire while the SSE connection stays open, but the mitigation ("send a custom event, client reconnects") is vague and not implemented. A long-lived connection with an expired token is a security gap. Need either: short-lived SSE tokens, or a server-side expiry check that closes the connection. |
+| 6 | **JWT as query param mentioned** | Medium | The plan suggests passing JWT via query string for `EventSource` API. **Tokens in URLs get logged by proxies/load balancers** — security risk. Should recommend `fetch` + `ReadableStream` (which the plan does show) and drop the query-param suggestion. |
+| 7 | **CRUD endpoints return awkward nesting** | Low | `findAll` returns `{ data, total, page, limit }` → `ResponseInterceptor` wraps it as `{ success, message, data: { data, total, page, limit } }`. The `data.data` nesting is ugly. Should return the array directly and put pagination in a header or top-level. |
+| 8 | **`type: string` is too loose** | Low | Notification `type` should be a string union or enum (`'property.verified' | 'property.rejected' | ...`) for type safety. |
+| 9 | **No `@Sse()` decorator considered** | Low | NestJS has a built-in `@Sse()` decorator that handles headers automatically. The manual `res.setHeader` approach works but reinvents what NestJS provides. (Though manual is needed here to bypass `ResponseInterceptor`.) |
+
+### Recommended Fixes Before Implementing
+
+1. **Add `id:` field to SSE frames** using the notification's DB ID. On reconnect, check `Last-Event-ID` header and only replay notifications created after that ID. This eliminates both the lost-message and duplicate problems.
+2. **Cap connections per user** (e.g. 5). When exceeded, close the oldest connection.
+3. **Wrap `res.write()` in try/catch** and remove the connection on `EPIPE`/error.
+4. **Drop the query-param JWT suggestion** — only recommend `fetch` + `ReadableStream` with `Authorization` header.
+5. **Define a `NotificationType` enum/union** instead of raw `string`.
+6. **Handle JWT expiry** — either set a server-side timer to close the connection when the token expires, or issue a separate long-lived SSE token.
+
+### What's Already Good (No Changes Needed)
+
+- **SSE over WebSocket** — correct for unidirectional server→client notifications.
+- **Clean dependency graph** — `NotificationService` orchestrator + `NotificationChannel` interface eliminates circular deps.
+- **`@Res()` bypasses `ResponseInterceptor`** — correct, SSE must emit raw frames.
+- **Heartbeat every 30s** — prevents proxy idle timeouts.
+- **Replay unread on connect** — good UX baseline (just needs `Last-Event-ID` to be robust).
+- **Pluggable channels** — `NotificationChannel` interface makes adding email/SMS trivial.
+- **Scaling path documented** — Redis pub/sub replacement sketched out.
