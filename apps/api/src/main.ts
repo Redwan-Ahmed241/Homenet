@@ -8,6 +8,24 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor.
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // CORS — allow frontend dev servers (Vite: 5173-5176) and sibling services (3000-3006)
+  app.enableCors({
+    origin: [
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:3002',
+      'http://localhost:3003',
+      'http://localhost:3004',
+      'http://localhost:3005',
+      'http://localhost:3006',
+      'http://localhost:5173',
+      'http://localhost:5174',
+      'http://localhost:5175',
+      'http://localhost:5176',
+    ],
+    credentials: true,
+  });
+
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
