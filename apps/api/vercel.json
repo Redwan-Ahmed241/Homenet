@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "buildCommand": "npx prisma generate && nest build",
+  "outputDirectory": ".",
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/api" }
+  ],
+  "functions": {
+    "api/**/*.js": {
+      "maxDuration": 30
+    }
+  }
+}
