@@ -27,7 +27,10 @@ import { EventsModule } from './infrastructure/events/events.module.js';
     BackgroundTaskModule,
     NotificationModule,
     EventsModule,
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: ['.env', '../../.env', '../.env'],
+    }),
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
