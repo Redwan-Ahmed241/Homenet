@@ -2,6 +2,8 @@
 
 > **Base URL:** `http://localhost:3000`
 >
+> **Branch:** All work must be done on the **`dev`** branch.
+>
 > **CORS:** Allowed origins — `localhost:3000` through `localhost:3006`, and `localhost:5173` through `localhost:5176` (Vite dev servers).
 >
 > **Global Response Format (Success):**
