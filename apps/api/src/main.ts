@@ -22,6 +22,8 @@ async function bootstrap() {
       'http://localhost:5174',
       'http://localhost:5175',
       'http://localhost:5176',
+      'https://www.homenet-bd.com',
+      'https://homenetbd.com/'
     ],
     credentials: true,
   });
