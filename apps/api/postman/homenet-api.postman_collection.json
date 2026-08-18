@@ -1,0 +1,1145 @@
+{
+  "info": {
+    "_postman_id": "homenet-api-full-check",
+    "name": "Homenet API - Full Endpoint Tests",
+    "description": "Automated smoke test for every Homenet API endpoint on https://homenet-api.vercel.app\n\nCovers public, user (s@g.com) and admin (a@g.com) routes. Image-upload endpoints (POST /v1/users/avatar, POST /v1/properties/:id/media, DELETE /v1/properties/media/:mediaId) are intentionally skipped.\n\nRun order matters: 01 Setup -> 02 Roles -> 03 Areas -> 04 Properties -> 05 Users. Tokens are captured automatically from the login/register responses.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://homenet-api.vercel.app" },
+    { "key": "userEmail", "value": "s@g.com" },
+    { "key": "userPassword", "value": "asdfghjk" },
+    { "key": "adminEmail", "value": "a@g.com" },
+    { "key": "adminPassword", "value": "asdfghjk" },
+    { "key": "userToken", "value": "" },
+    { "key": "userRefreshToken", "value": "" },
+    { "key": "adminToken", "value": "" },
+    { "key": "adminRefreshToken", "value": "" },
+    { "key": "registeredUserId", "value": "" },
+    { "key": "registeredUserToken", "value": "" },
+    { "key": "registeredRefreshToken", "value": "" },
+    { "key": "seedAreaId", "value": "" },
+    { "key": "seedPropertyId", "value": "" },
+    { "key": "tempAreaId", "value": "" },
+    { "key": "propertyId", "value": "" }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "if (!pm.collectionVariables.get('baseUrl')) {",
+          "  pm.collectionVariables.set('baseUrl', 'https://homenet-api.vercel.app');",
+          "}"
+        ],
+        "type": "text/javascript"
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Setup & Auth (Public)",
+      "item": [
+        {
+          "name": "POST /v1/auth/register",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));",
+                  "pm.collectionVariables.set('registeredUserId', j.data.user.id);",
+                  "pm.collectionVariables.set('registeredUserToken', j.data.access_token);",
+                  "pm.collectionVariables.set('registeredRefreshToken', j.data.refresh_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Postman Tester\",\n  \"email\": \"{{$randomEmail}}\",\n  \"password\": \"TestPass123\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/auth/register"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /v1/auth/login (user)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));",
+                  "pm.collectionVariables.set('userToken', j.data.access_token);",
+                  "pm.collectionVariables.set('userRefreshToken', j.data.refresh_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/auth/login"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /v1/auth/login (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));",
+                  "pm.collectionVariables.set('adminToken', j.data.access_token);",
+                  "pm.collectionVariables.set('adminRefreshToken', j.data.refresh_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/auth/login"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /v1/auth/refresh",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));",
+                  "pm.collectionVariables.set('userToken', j.data.access_token);",
+                  "pm.collectionVariables.set('userRefreshToken', j.data.refresh_token);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{userRefreshToken}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/auth/refresh"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /v1/auth/me",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));",
+                  "pm.test('has id', () => pm.expect(j.data.id).to.be.a('string'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{userToken}}", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/auth/me"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /v1/auth/change-password",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{registeredUserToken}}", "type": "string" }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"current_password\": \"TestPass123\",\n  \"new_password\": \"NewPass4567\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/auth/change-password"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /v1/auth/logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{userToken}}", "type": "string" }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{userRefreshToken}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/auth/logout"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "02 - Roles (admin only, view_roles)",
+      "item": [
+        {
+          "name": "GET /v1/roles",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{adminToken}}", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/roles"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /v1/roles/:id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));",
+                  "pm.test('returns role', () => pm.expect(j.data.id).to.eql('role-admin-001'));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{adminToken}}", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/roles/role-admin-001"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /v1/roles/user/:userId",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{adminToken}}", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/roles/user/user-swaron-001"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /v1/roles/assign (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{adminToken}}", "type": "string" }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"user-swaron-001\",\n  \"roleId\": \"role-mod-001\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/roles/assign"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /v1/roles/revoke (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{adminToken}}", "type": "string" }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userId\": \"user-swaron-001\",\n  \"roleId\": \"role-mod-001\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/roles/revoke"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /v1/roles/:roleId/permissions (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{adminToken}}", "type": "string" }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permissionId\": \"perm-007\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/roles/role-buyer-001/permissions"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /v1/roles/:roleId/permissions/:permissionId (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{adminToken}}", "type": "string" }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/v1/roles/role-buyer-001/permissions/perm-007"
+          },
+          "response": []
+        },
+        {
+          "name": "403 GET /v1/roles (no permissions)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 403', () => pm.response.to.have.status(403));",
+                  "pm.test('success=false', () => pm.expect(j.success).to.eql(false));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{registeredUserToken}}", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/roles"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "03 - Areas",
+      "item": [
+        {
+          "name": "GET /v1/areas (public)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));",
+                  "pm.test('has items', () => pm.expect(j.data.items.length).to.be.above(0));",
+                  "pm.collectionVariables.set('seedAreaId', j.data.items[0].id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/areas?limit=20"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /v1/areas/:id (public)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/areas/{{seedAreaId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /v1/areas/:id/children (public)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/areas/{{seedAreaId}}/children"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /v1/areas (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));",
+                  "pm.collectionVariables.set('tempAreaId', j.data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{adminToken}}", "type": "string" }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Test Area {{$timestamp}}\",\n  \"city\": \"Dhaka\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/areas"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /v1/areas/:id (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{adminToken}}", "type": "string" }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Postman Area Updated {{$timestamp}}\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/areas/{{tempAreaId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /v1/areas/:id (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{adminToken}}", "type": "string" }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/v1/areas/{{tempAreaId}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "04 - Properties",
+      "item": [
+        {
+          "name": "GET /v1/properties (public)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));",
+                  "pm.test('has items', () => pm.expect(j.data.items.length).to.be.above(0));",
+                  "pm.collectionVariables.set('seedPropertyId', j.data.items[0].id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/properties?limit=20"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /v1/properties/:id (public)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/properties/{{seedPropertyId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /v1/properties/my (user)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{userToken}}", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/properties/my?limit=10"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /v1/properties/admin (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{adminToken}}", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/properties/admin?limit=10"
+          },
+          "response": []
+        },
+        {
+          "name": "403 GET /v1/properties/admin (no permissions)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 403', () => pm.response.to.have.status(403));",
+                  "pm.test('success=false', () => pm.expect(j.success).to.eql(false));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{registeredUserToken}}", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/properties/admin?limit=10"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /v1/properties (user)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 201', () => pm.response.to.have.status(201));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));",
+                  "pm.collectionVariables.set('propertyId', j.data.id);"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{userToken}}", "type": "string" }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"area_id\": \"{{seedAreaId}}\",\n  \"title\": \"Postman Test Property {{$timestamp}}\",\n  \"description\": \"Created by Postman test collection\",\n  \"type\": \"residential\",\n  \"listing_type\": \"sale\",\n  \"price\": 75000,\n  \"price_currency\": \"BDT\",\n  \"area_size\": 1250,\n  \"area_unit\": \"sqft\",\n  \"location_lat\": 23.79,\n  \"location_lng\": 90.41,\n  \"address\": \"Test Street, Dhaka\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/properties"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /v1/properties/:id (user)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{userToken}}", "type": "string" }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 80000,\n  \"title\": \"Postman Property Updated\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/properties/{{propertyId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "POST /v1/properties/:id/submit (expect 400 - media required)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 400', () => pm.response.to.have.status(400));",
+                  "pm.test('success=false', () => pm.expect(j.success).to.eql(false));",
+                  "pm.test('error_code=1521 (submit requires media)', () => pm.expect(j.error_code).to.eql(1521));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{userToken}}", "type": "string" }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/v1/properties/{{propertyId}}/submit"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /v1/properties/:id/admin (admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{adminToken}}", "type": "string" }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"active\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/properties/{{propertyId}}/admin"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /v1/properties/:id (user, soft)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{userToken}}", "type": "string" }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/v1/properties/{{propertyId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /v1/properties/:id/admin (admin, hard)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{adminToken}}", "type": "string" }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/v1/properties/{{propertyId}}/admin"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "05 - Users",
+      "item": [
+        {
+          "name": "GET /v1/users",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{userToken}}", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/users"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /v1/users/avatar (200 if existed, 404 if none)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Returns 200 or 404 (no avatar = 404)', () => pm.expect([200, 404]).to.include(pm.response.code));",
+                  "pm.test('success flag consistent', () => {",
+                  "  const j = pm.response.json();",
+                  "  pm.expect(j.success).to.eql(pm.response.code === 200);",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{userToken}}", "type": "string" }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/v1/users/avatar"
+          },
+          "response": []
+        },
+        {
+          "name": "GET /v1/users/:id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));",
+                  "pm.test('returns user', () => pm.expect(j.data.id).to.eql(pm.collectionVariables.get('registeredUserId')));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{userToken}}", "type": "string" }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/users/{{registeredUserId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "PATCH /v1/users/:id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{userToken}}", "type": "string" }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"Postman Tester Updated\"\n}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/users/{{registeredUserId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "DELETE /v1/users/:id (cleanup temp user)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const j = pm.response.json();",
+                  "pm.test('Status 200', () => pm.response.to.have.status(200));",
+                  "pm.test('success=true', () => pm.expect(j.success).to.eql(true));"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                { "key": "token", "value": "{{userToken}}", "type": "string" }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/v1/users/{{registeredUserId}}"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

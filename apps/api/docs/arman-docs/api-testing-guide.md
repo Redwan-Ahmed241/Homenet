@@ -541,7 +541,7 @@ Removes the authenticated user's avatar URL from their profile. The Cloudinary f
 **Request:**
 
 ```
-DELETE http://localhost:3000/users/avatar
+DELETE  
 Authorization: Bearer <access_token>
 ```
 
