@@ -10,17 +10,12 @@ export class LoggerService implements OnModuleInit {
   private logger: winston.Logger;
 
   constructor() {
-    this.ensureLogDirectory();
+    const isVercel = !!process.env.VERCEL;
 
     const logFormat = winston.format.printf(
       ({ timestamp, level, message, fileName, functionName, lineNumber }) => {
-        return `${timestamp} | ${fileName} | ${functionName} | ${lineNumber} | ${level} | ${message}`;
+        return `${timestamp} | ${fileName || '-'} | ${functionName || '-'} | ${lineNumber || '-'} | ${level} | ${message}`;
       },
-    );
-
-    const fileFormat = winston.format.combine(
-      winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
-      logFormat,
     );
 
     const consoleFormat = winston.format.combine(
@@ -29,30 +24,41 @@ export class LoggerService implements OnModuleInit {
       logFormat,
     );
 
+    const transports: winston.transport[] = [
+      new winston.transports.Console({
+        level: 'TRACE',
+        format: consoleFormat,
+      }),
+    ];
+
+    if (!isVercel) {
+      try {
+        this.ensureLogDirectory();
+        const fileFormat = winston.format.combine(
+          winston.format.timestamp({ format: 'YYYY-MM-DD HH:mm:ss' }),
+          logFormat,
+        );
+        transports.push(
+          new winston.transports.File({
+            filename: 'logs/error.log',
+            level: 'ERROR',
+            format: fileFormat,
+          }),
+          new winston.transports.File({
+            filename: 'logs/app.log',
+            level: 'TRACE',
+            format: fileFormat,
+          }),
+        );
+      } catch (err) {
+        // Ignore file system errors on read-only environments
+      }
+    }
+
     this.logger = winston.createLogger({
       levels: customLogLevels.levels,
-      transports: [
-        new winston.transports.File({
-          filename: 'logs/error.log',
-          level: 'ERROR', // Matches <= ERROR (0 and 1, which are FATAL and ERROR)
-          format: fileFormat,
-        }),
-        new winston.transports.File({
-          filename: 'logs/app.log',
-          level: 'TRACE', // Matches everything (<= 5)
-          format: fileFormat,
-        }),
-      ],
+      transports,
     });
-
-    if (process.env.NODE_ENV !== 'production') {
-      this.logger.add(
-        new winston.transports.Console({
-          level: 'TRACE',
-          format: consoleFormat,
-        }),
-      );
-    }
   }
 
   onModuleInit() {
