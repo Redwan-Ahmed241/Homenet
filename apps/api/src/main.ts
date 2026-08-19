@@ -8,7 +8,7 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor.
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // CORS — allow frontend dev servers (Vite: 5173-5176) and sibling services (3000-3006)
+  // CORS — allow frontend dev servers (Vite: 8081-8086) 
   app.enableCors({
     origin: [
       'http://localhost:8081',
