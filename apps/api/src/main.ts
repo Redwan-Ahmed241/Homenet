@@ -8,20 +8,17 @@ import { ResponseInterceptor } from './common/interceptors/response.interceptor.
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // CORS — allow frontend dev servers (Vite: 5173-5176) and sibling services (3000-3006)
+  // CORS — allow frontend dev servers (Vite: 8081-8086) 
   app.enableCors({
     origin: [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:3002',
-      'http://localhost:3003',
-      'http://localhost:3004',
-      'http://localhost:3005',
-      'http://localhost:3006',
-      'http://localhost:5173',
-      'http://localhost:5174',
-      'http://localhost:5175',
-      'http://localhost:5176',
+      'http://localhost:8081',
+      'http://localhost:8082',
+      'http://localhost:8083',
+      'http://localhost:8084',
+      'http://localhost:8085',
+      'http://localhost:8086',
+      'https://www.homenet-bd.com',
+      'https://homenetbd.com/'
     ],
     credentials: true,
   });
