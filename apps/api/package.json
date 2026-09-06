@@ -23,6 +23,7 @@
     "seed:areas": "ts-node prisma/seeds/areas.seed.ts",
     "seed:roles": "ts-node prisma/seeds/roles-permissions.seed.ts",
     "seed:properties": "ts-node prisma/seeds/properties.seed.ts",
+    "upload:assets": "ts-node scripts/upload-seed-assets.ts",
     "docker:setup": "scripts\\setup.bat",
     "docker:start": "scripts\\start.bat",
     "docker:stop": "scripts\\stop.bat",

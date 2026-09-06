@@ -249,10 +249,85 @@ async function main() {
     });
 
     console.log(`  ✓ ${prop.title} (${property.id})`);
+
+    // Ensure property media is attached if defined
+    const defaultMedia = DEFAULT_PROPERTY_MEDIA[areaId];
+    if (defaultMedia) {
+      const existingMedia = await prisma.propertyMedia.findFirst({
+        where: { property_id: property.id },
+      });
+
+      if (!existingMedia) {
+        await prisma.propertyMedia.create({
+          data: {
+            property_id: property.id,
+            media_type: 'image',
+            url: defaultMedia.url,
+            thumbnail_url: defaultMedia.thumbnail_url,
+            public_id: defaultMedia.public_id,
+            display_order: 0,
+          },
+        });
+        console.log(`    ↳ Attached media: ${defaultMedia.url}`);
+      }
+    }
   }
 
   console.log('Properties seeding complete!');
 }
+
+const DEFAULT_PROPERTY_MEDIA: Record<string, { url: string; thumbnail_url: string; public_id: string }> = {
+  'gulshan-1-dhaka': {
+    url: 'https://res.cloudinary.com/ms3nwbfn/image/upload/v1788676691/homenet/properties/gulshan-1-dhaka-user-swa/images/8628ea16-ffab-4578-9698-d94cbc3f5ace.jpg',
+    thumbnail_url: 'https://res.cloudinary.com/ms3nwbfn/image/upload/w_400,h_300,c_fill/v1788676691/homenet/properties/gulshan-1-dhaka-user-swa/images/8628ea16-ffab-4578-9698-d94cbc3f5ace.jpg',
+    public_id: 'homenet/properties/gulshan-1-dhaka-user-swa/images/8628ea16-ffab-4578-9698-d94cbc3f5ace',
+  },
+  'banani-dhaka': {
+    url: 'https://res.cloudinary.com/ms3nwbfn/image/upload/v1788676694/homenet/properties/banani-dhaka-user-swa/images/240a36d1-0b10-4e7f-a03e-82a033301561.jpg',
+    thumbnail_url: 'https://res.cloudinary.com/ms3nwbfn/image/upload/w_400,h_300,c_fill/v1788676694/homenet/properties/banani-dhaka-user-swa/images/240a36d1-0b10-4e7f-a03e-82a033301561.jpg',
+    public_id: 'homenet/properties/banani-dhaka-user-swa/images/240a36d1-0b10-4e7f-a03e-82a033301561',
+  },
+  'gulshan-2-dhaka': {
+    url: 'https://res.cloudinary.com/ms3nwbfn/image/upload/v1788676698/homenet/properties/gulshan-2-dhaka-user-swa/images/d6772e0b-caa7-4635-aaa2-33506b2c4313.jpg',
+    thumbnail_url: 'https://res.cloudinary.com/ms3nwbfn/image/upload/w_400,h_300,c_fill/v1788676698/homenet/properties/gulshan-2-dhaka-user-swa/images/d6772e0b-caa7-4635-aaa2-33506b2c4313.jpg',
+    public_id: 'homenet/properties/gulshan-2-dhaka-user-swa/images/d6772e0b-caa7-4635-aaa2-33506b2c4313',
+  },
+  'uttara-sector-7-dhaka': {
+    url: 'https://res.cloudinary.com/ms3nwbfn/image/upload/v1788676702/homenet/properties/uttara-sector-7-dhaka-user-arm/images/bc283609-7ea9-4ddb-b2d4-fb1f77b00f28.jpg',
+    thumbnail_url: 'https://res.cloudinary.com/ms3nwbfn/image/upload/w_400,h_300,c_fill/v1788676702/homenet/properties/uttara-sector-7-dhaka-user-arm/images/bc283609-7ea9-4ddb-b2d4-fb1f77b00f28.jpg',
+    public_id: 'homenet/properties/uttara-sector-7-dhaka-user-arm/images/bc283609-7ea9-4ddb-b2d4-fb1f77b00f28',
+  },
+  'mirpur-10-dhaka': {
+    url: 'https://res.cloudinary.com/ms3nwbfn/image/upload/v1788676706/homenet/properties/mirpur-10-dhaka-user-swa/images/98292797-12d8-47f2-8ff9-5460c4e11c48.jpg',
+    thumbnail_url: 'https://res.cloudinary.com/ms3nwbfn/image/upload/w_400,h_300,c_fill/v1788676706/homenet/properties/mirpur-10-dhaka-user-swa/images/98292797-12d8-47f2-8ff9-5460c4e11c48.jpg',
+    public_id: 'homenet/properties/mirpur-10-dhaka-user-swa/images/98292797-12d8-47f2-8ff9-5460c4e11c48',
+  },
+  'baridhara-dhaka': {
+    url: 'https://res.cloudinary.com/ms3nwbfn/image/upload/v1788676711/homenet/properties/baridhara-dhaka-user-arm/images/f11e5ee6-8737-4588-a0ee-37144aaba892.jpg',
+    thumbnail_url: 'https://res.cloudinary.com/ms3nwbfn/image/upload/w_400,h_300,c_fill/v1788676711/homenet/properties/baridhara-dhaka-user-arm/images/f11e5ee6-8737-4588-a0ee-37144aaba892.jpg',
+    public_id: 'homenet/properties/baridhara-dhaka-user-arm/images/f11e5ee6-8737-4588-a0ee-37144aaba892',
+  },
+  'mohammadpur-dhaka': {
+    url: 'https://res.cloudinary.com/ms3nwbfn/image/upload/v1788676713/homenet/properties/mohammadpur-dhaka-user-swa/images/9c7e9d92-41c4-4f10-a9af-62fadf6c1738.jpg',
+    thumbnail_url: 'https://res.cloudinary.com/ms3nwbfn/image/upload/w_400,h_300,c_fill/v1788676713/homenet/properties/mohammadpur-dhaka-user-swa/images/9c7e9d92-41c4-4f10-a9af-62fadf6c1738.jpg',
+    public_id: 'homenet/properties/mohammadpur-dhaka-user-swa/images/9c7e9d92-41c4-4f10-a9af-62fadf6c1738',
+  },
+  'motijheel-dhaka': {
+    url: 'https://res.cloudinary.com/ms3nwbfn/image/upload/v1788676718/homenet/properties/motijheel-dhaka-user-arm/images/64094b14-f9bb-49c6-a247-8a0c9577a4b1.jpg',
+    thumbnail_url: 'https://res.cloudinary.com/ms3nwbfn/image/upload/w_400,h_300,c_fill/v1788676718/homenet/properties/motijheel-dhaka-user-arm/images/64094b14-f9bb-49c6-a247-8a0c9577a4b1.jpg',
+    public_id: 'homenet/properties/motijheel-dhaka-user-arm/images/64094b14-f9bb-49c6-a247-8a0c9577a4b1',
+  },
+  'dhanmondi-dhaka': {
+    url: 'https://res.cloudinary.com/ms3nwbfn/image/upload/v1788676723/homenet/properties/dhanmondi-dhaka-user-swa/images/38246b1e-3ce9-4dce-a595-0f2889cd364c.jpg',
+    thumbnail_url: 'https://res.cloudinary.com/ms3nwbfn/image/upload/w_400,h_300,c_fill/v1788676723/homenet/properties/dhanmondi-dhaka-user-swa/images/38246b1e-3ce9-4dce-a595-0f2889cd364c.jpg',
+    public_id: 'homenet/properties/dhanmondi-dhaka-user-swa/images/38246b1e-3ce9-4dce-a595-0f2889cd364c',
+  },
+  'bashundhara-dhaka': {
+    url: 'https://res.cloudinary.com/ms3nwbfn/image/upload/v1788677412/homenet/properties/bashundhara-dhaka-user-arm/images/8d32408e-b103-4431-abe9-e1e6a9b0baf5.jpg',
+    thumbnail_url: 'https://res.cloudinary.com/ms3nwbfn/image/upload/w_400,h_300,c_fill/v1788677412/homenet/properties/bashundhara-dhaka-user-arm/images/8d32408e-b103-4431-abe9-e1e6a9b0baf5.jpg',
+    public_id: 'homenet/properties/bashundhara-dhaka-user-arm/images/8d32408e-b103-4431-abe9-e1e6a9b0baf5',
+  },
+};
 
 main()
   .catch((e) => {

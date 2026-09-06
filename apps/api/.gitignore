@@ -7,3 +7,6 @@ server.err
 
 # Keep personal Postman environments out of version control
 postman/environments/*.local.json
+
+# Local asset files uploaded to Cloudinary
+asset/
