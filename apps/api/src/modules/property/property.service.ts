@@ -58,13 +58,20 @@ export class PropertyService {
   }
 
   async findAll(query: PropertyQueryDto) {
-    const cacheKey = this.generateCacheKey('properties:list', query);
+    const search = (query.search || query.query)?.trim();
+    const city = (query.city || query.location)?.trim();
+    const normalizedQuery = {
+      ...query,
+      search: search || undefined,
+      city: city || undefined,
+    };
+    const cacheKey = this.generateCacheKey('properties:list', normalizedQuery);
 
     return this.cacheService.getOrSet(cacheKey, async () => {
       const {
         lat, lng, radius,
         ...rest
-      } = query;
+      } = normalizedQuery;
 
       const queryParams = {
         ...rest,
@@ -469,8 +476,12 @@ export class PropertyService {
   }
 
   async findAllAdmin(query: PropertyQueryDto) {
+    const search = (query.search || query.query)?.trim();
+    const city = (query.city || query.location)?.trim();
     const queryParams = {
       ...query,
+      search: search || undefined,
+      city: city || undefined,
       page: query.page ?? 1,
       limit: query.limit ?? 20,
       sort_by: query.sort_by ?? 'created_at_desc',
@@ -482,8 +493,12 @@ export class PropertyService {
   // ── User Property Management ──────────────────────────────
 
   async findUserProperties(query: PropertyQueryDto, userId: string) {
+    const search = (query.search || query.query)?.trim();
+    const city = (query.city || query.location)?.trim();
     const queryParams = {
       ...query,
+      search: search || undefined,
+      city: city || undefined,
       userId,
       page: query.page ?? 1,
       limit: query.limit ?? 20,

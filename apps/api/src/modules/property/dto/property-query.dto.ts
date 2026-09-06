@@ -17,6 +17,10 @@ export class PropertyQueryDto {
 
   @IsOptional()
   @IsString()
+  location?: string;
+
+  @IsOptional()
+  @IsString()
   area_id?: string;
 
   @IsOptional()
@@ -68,6 +72,10 @@ export class PropertyQueryDto {
   @IsOptional()
   @IsString()
   search?: string;
+
+  @IsOptional()
+  @IsString()
+  query?: string;
 
   @IsOptional()
   @Transform(({ value }) => value === 'true' || value === true)

@@ -1,6 +1,7 @@
 export interface PropertyQueryParams {
   status?: string;
   city?: string;
+  location?: string;
   area_id?: string;
   type?: string;
   listing_type?: string;
@@ -11,6 +12,7 @@ export interface PropertyQueryParams {
   bedrooms?: number;
   bathrooms?: number;
   search?: string;
+  query?: string;
   is_verified?: boolean;
   sort_by?: string;
   page: number;

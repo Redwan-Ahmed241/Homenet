@@ -55,7 +55,13 @@ export class PrismaPropertyRepository implements IPropertyRepository {
     if (query.type) where.type = query.type;
     if (query.listing_type) where.listing_type = query.listing_type;
     if (query.is_verified !== undefined) where.is_verified = query.is_verified;
-    if (query.city) where.area = { city: query.city };
+    const city = (query.city || query.location)?.trim();
+    if (city) {
+      where.area = {
+        ...(where.area || {}),
+        city: { equals: city, mode: 'insensitive' },
+      };
+    }
 
     if (query.min_price !== undefined || query.max_price !== undefined) {
       where.price = {};
@@ -78,10 +84,14 @@ export class PrismaPropertyRepository implements IPropertyRepository {
       where.amenities = { ...amenitiesFilter, path: ['bathrooms'], equals: query.bathrooms };
     }
 
-    if (query.search) {
+    const searchTerm = (query.search || query.query)?.trim();
+    if (searchTerm) {
       where.OR = [
-        { title: { contains: query.search, mode: 'insensitive' } },
-        { description: { contains: query.search, mode: 'insensitive' } },
+        { title: { contains: searchTerm, mode: 'insensitive' } },
+        { description: { contains: searchTerm, mode: 'insensitive' } },
+        { address: { contains: searchTerm, mode: 'insensitive' } },
+        { area: { name: { contains: searchTerm, mode: 'insensitive' } } },
+        { area: { city: { contains: searchTerm, mode: 'insensitive' } } },
       ];
     }
 
