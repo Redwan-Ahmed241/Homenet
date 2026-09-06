@@ -89,14 +89,14 @@ const ASSET_MAPPINGS: AssetMapping[] = [
 
 // Baseline byte sizes from the initial upload
 const INITIAL_ASSET_SIZES: Record<string, number> = {
-  '4br_apartment_gulshan.jpg': 2603328,
+  '4br_apartment_gulshan.jpg': 2529365,
   'modern_3br_apartment_banani.jpg': 2671887,
-  'luxury_penthouse_gulshan_2.jpg': 2841531,
+  'luxury_penthouse_gulshan_2.jpg': 2678232,
   'affordable_2br_apartment_uttara_sector_7.jpg': 3291599,
   'commercial_showroom_mirpur_10.jpg': 2322749,
-  'commercial_plot_baridhara_dohs.jpg': 3758864,
-  'garage_image_mohammadpur.jpg': 754459,
-  'corporate_office_motijheel.jpg': 2928054,
+  'commercial_plot_baridhara_dohs.jpg': 3510713,
+  'garage_image_mohammadpur.jpg': 2505140,
+  'corporate_office_motijheel.jpg': 2629068,
   'office_space_dhanmondi.jpg': 2933707,
   'spacious_5br_villa_bashundhara.jpg': 2740066,
 };
