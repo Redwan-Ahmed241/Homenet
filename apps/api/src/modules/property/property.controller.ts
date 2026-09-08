@@ -55,6 +55,13 @@ export class PropertyController {
     return this.propertyService.findUserProperties(query, user.id);
   }
 
+  // ── User: Saved Properties (static route before @Get(':id')) ─
+
+  @Get('saved')
+  findSavedProperties(@CurrentUser() user: AuthenticatedUser) {
+    return this.propertyService.findSavedProperties(user.id);
+  }
+
   @Public()
   @Get(':id')
   findOne(@Param('id') id: string) {
@@ -94,6 +101,26 @@ export class PropertyController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.propertyService.submitForVerification(id, user.id);
+  }
+
+  // ── User: Save / Unsave Property ───────────────────────
+
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  @Post(':id/save')
+  saveProperty(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.propertyService.saveProperty(id, user.id);
+  }
+
+  @Throttle({ default: { limit: 30, ttl: 60000 } })
+  @Delete(':id/save')
+  unsaveProperty(
+    @Param('id') id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.propertyService.unsaveProperty(id, user.id);
   }
 
   @Throttle({ default: { limit: 10, ttl: 60000 } })

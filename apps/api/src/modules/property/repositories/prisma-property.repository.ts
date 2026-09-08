@@ -11,6 +11,7 @@ import type {
   PropertyDetail,
   PaginatedResult,
   PropertyMedia,
+  SavedPropertyItem,
 } from '../interfaces/property-repository.interface.js';
 import type { Verification, VerificationStatus } from '@prisma/client';
 
@@ -668,6 +669,107 @@ export class PrismaPropertyRepository implements IPropertyRepository {
       functionName: 'updateStatus',
       lineNumber: 528,
     });
+  }
+
+  async findSavedByUser(userId: string): Promise<SavedPropertyItem[]> {
+    const saved = await this.prisma.savedProperty.findMany({
+      where: {
+        user_id: userId,
+        property: { status: 'active' },
+      },
+      orderBy: { created_at: 'desc' },
+      include: {
+        property: {
+          select: {
+            ...propertyPublicSelect,
+            area: {
+              select: {
+                id: true,
+                name: true,
+                parent_area_id: true,
+                city: true,
+              },
+            },
+            user: {
+              select: {
+                id: true,
+                full_name: true,
+                avatar_url: true,
+              },
+            },
+            media: {
+              orderBy: { display_order: 'asc' },
+              select: {
+                id: true,
+                property_id: true,
+                media_type: true,
+                url: true,
+                public_id: true,
+                thumbnail_url: true,
+                display_order: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return saved
+      .filter((s) => s.property !== null)
+      .map((s) => s.property as unknown as SavedPropertyItem);
+  }
+
+  async saveProperty(userId: string, propertyId: string): Promise<{ alreadySaved: boolean }> {
+    const existing = await this.prisma.savedProperty.findUnique({
+      where: {
+        user_id_property_id: { user_id: userId, property_id: propertyId },
+      },
+    });
+
+    if (existing) {
+      this.logger.debug(`Property ${propertyId} already saved by user ${userId}`, {
+        fileName: 'prisma-property.repository.ts',
+        functionName: 'saveProperty',
+        lineNumber: 727,
+      });
+      return { alreadySaved: true };
+    }
+
+    await this.prisma.savedProperty.upsert({
+      where: {
+        user_id_property_id: { user_id: userId, property_id: propertyId },
+      },
+      create: {
+        user_id: userId,
+        property_id: propertyId,
+      },
+      update: {},
+    });
+
+    this.logger.info(`Property ${propertyId} saved by user ${userId}`, {
+      fileName: 'prisma-property.repository.ts',
+      functionName: 'saveProperty',
+      lineNumber: 745,
+    });
+
+    return { alreadySaved: false };
+  }
+
+  async unsaveProperty(userId: string, propertyId: string): Promise<{ wasSaved: boolean }> {
+    const result = await this.prisma.savedProperty.deleteMany({
+      where: {
+        user_id: userId,
+        property_id: propertyId,
+      },
+    });
+
+    this.logger.info(`Property ${propertyId} unsaved by user ${userId} (existed: ${result.count > 0})`, {
+      fileName: 'prisma-property.repository.ts',
+      functionName: 'unsaveProperty',
+      lineNumber: 761,
+    });
+
+    return { wasSaved: result.count > 0 };
   }
 
   private calculateDistance(
