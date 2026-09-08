@@ -673,7 +673,10 @@ export class PrismaPropertyRepository implements IPropertyRepository {
 
   async findSavedByUser(userId: string): Promise<SavedPropertyItem[]> {
     const saved = await this.prisma.savedProperty.findMany({
-      where: { user_id: userId },
+      where: {
+        user_id: userId,
+        property: { status: 'active' },
+      },
       orderBy: { created_at: 'desc' },
       include: {
         property: {

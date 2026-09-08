@@ -637,28 +637,16 @@ export class PropertyService {
   }
 
   async findSavedProperties(userId: string) {
-    const properties = await this.propertyRepo.findSavedByUser(userId);
-
-    if (properties.length === 0) {
-      return {
-        message: 'No saved properties found',
-        data: [],
-      };
-    }
-
-    return {
-      message: 'Saved properties retrieved successfully',
-      data: properties,
-    };
+    return this.propertyRepo.findSavedByUser(userId);
   }
 
   async saveProperty(propertyId: string, userId: string) {
     const property = await this.propertyRepo.findById(propertyId);
-    if (!property) {
-      this.logger.warn(`saveProperty failed — property not found: ${propertyId}`, {
+    if (!property || property.status !== 'active') {
+      this.logger.warn(`saveProperty failed — property not found or not active: ${propertyId}`, {
         fileName: 'property.service.ts',
         functionName: 'saveProperty',
-        lineNumber: 658,
+        lineNumber: 644,
       });
       throw new AppException(PROPERTY_ERRORS.PROPERTY_NOT_FOUND);
     }

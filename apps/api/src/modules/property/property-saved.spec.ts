@@ -69,19 +69,16 @@ describe('Saved Properties Feature', () => {
   });
 
   describe('PropertyService.findSavedProperties', () => {
-    it('should return empty list message when user has no saved properties', async () => {
+    it('should return empty list when user has no saved properties', async () => {
       mockPropertyRepo.findSavedByUser.mockResolvedValue([]);
 
       const result = await service.findSavedProperties('usr-1');
 
-      expect(result).toEqual({
-        message: 'No saved properties found',
-        data: [],
-      });
+      expect(result).toEqual([]);
       expect(mockPropertyRepo.findSavedByUser).toHaveBeenCalledWith('usr-1');
     });
 
-    it('should return properties list with success message', async () => {
+    it('should return properties list', async () => {
       const mockProps = [
         {
           id: 'prop-1',
@@ -94,10 +91,7 @@ describe('Saved Properties Feature', () => {
 
       const result = await service.findSavedProperties('usr-1');
 
-      expect(result).toEqual({
-        message: 'Saved properties retrieved successfully',
-        data: mockProps,
-      });
+      expect(result).toEqual(mockProps);
     });
   });
 
@@ -111,8 +105,17 @@ describe('Saved Properties Feature', () => {
       expect(mockPropertyRepo.saveProperty).not.toHaveBeenCalled();
     });
 
+    it('should throw AppException if property is not active', async () => {
+      mockPropertyRepo.findById.mockResolvedValue({ id: 'prop-1', status: 'archived' });
+
+      await expect(service.saveProperty('prop-1', 'usr-1')).rejects.toThrow(
+        AppException,
+      );
+      expect(mockPropertyRepo.saveProperty).not.toHaveBeenCalled();
+    });
+
     it('should save property successfully when not previously saved', async () => {
-      mockPropertyRepo.findById.mockResolvedValue({ id: 'prop-1' });
+      mockPropertyRepo.findById.mockResolvedValue({ id: 'prop-1', status: 'active' });
       mockPropertyRepo.saveProperty.mockResolvedValue({ alreadySaved: false });
 
       const result = await service.saveProperty('prop-1', 'usr-1');
@@ -125,7 +128,7 @@ describe('Saved Properties Feature', () => {
     });
 
     it('should return already saved message when already saved', async () => {
-      mockPropertyRepo.findById.mockResolvedValue({ id: 'prop-1' });
+      mockPropertyRepo.findById.mockResolvedValue({ id: 'prop-1', status: 'active' });
       mockPropertyRepo.saveProperty.mockResolvedValue({ alreadySaved: true });
 
       const result = await service.saveProperty('prop-1', 'usr-1');
@@ -177,17 +180,11 @@ describe('Saved Properties Feature', () => {
     const mockUser: any = { id: 'usr-1', role: 'user' };
 
     it('findSavedProperties should delegate to service', async () => {
-      jest.spyOn(service, 'findSavedProperties').mockResolvedValue({
-        message: 'Saved properties retrieved successfully',
-        data: [] as any,
-      });
+      jest.spyOn(service, 'findSavedProperties').mockResolvedValue([] as any);
 
       const res = await controller.findSavedProperties(mockUser);
       expect(service.findSavedProperties).toHaveBeenCalledWith('usr-1');
-      expect(res).toEqual({
-        message: 'Saved properties retrieved successfully',
-        data: [],
-      });
+      expect(res).toEqual([]);
     });
 
     it('saveProperty should delegate to service', async () => {
@@ -229,27 +226,21 @@ describe('Saved Properties Feature', () => {
     };
 
     it('formats populated saved properties array correctly', async () => {
-      const input = {
-        message: 'Saved properties retrieved successfully',
-        data: [{ id: 'p1', title: 'Luxury Apt' }],
-      };
+      const input = [{ id: 'p1', title: 'Luxury Apt' }];
       const res = await runInterceptor(input);
       expect(res).toEqual({
         success: true,
-        message: 'Saved properties retrieved successfully',
+        message: 'OK',
         data: [{ id: 'p1', title: 'Luxury Apt' }],
       });
     });
 
     it('formats empty saved properties list correctly', async () => {
-      const input = {
-        message: 'No saved properties found',
-        data: [],
-      };
+      const input: any[] = [];
       const res = await runInterceptor(input);
       expect(res).toEqual({
         success: true,
-        message: 'No saved properties found',
+        message: 'OK',
         data: [],
       });
     });
