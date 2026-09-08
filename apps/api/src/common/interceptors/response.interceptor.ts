@@ -28,9 +28,13 @@ export class ResponseInterceptor<T> implements NestInterceptor<T, ApiResponse<T>
 
         if (data && typeof data === 'object' && 'message' in data) {
           message = data.message;
-          // Remove message from data to avoid duplication
-          const { message: _, ...rest } = data;
-          responseData = Object.keys(rest).length > 0 ? rest : null;
+          if ('data' in data && Object.keys(data).length <= 2) {
+            responseData = data.data;
+          } else {
+            // Remove message from data to avoid duplication
+            const { message: _, ...rest } = data;
+            responseData = Object.keys(rest).length > 0 ? rest : null;
+          }
         }
 
         return {
