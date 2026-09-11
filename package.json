@@ -9,5 +9,8 @@
   ],
   "scripts": {
     "api": "npm run start:dev -w apps/api"
+  },
+  "dependencies": {
+    "@vercel/speed-insights": "^2.0.0"
   }
 }
