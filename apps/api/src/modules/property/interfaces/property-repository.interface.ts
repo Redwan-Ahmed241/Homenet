@@ -170,4 +170,32 @@ export interface IPropertyRepository {
     notes?: string,
   ): Promise<Verification>;
   updateStatus(propertyId: string, status: string): Promise<void>;
+
+  findSavedByUser(userId: string): Promise<SavedPropertyItem[]>;
+  saveProperty(userId: string, propertyId: string): Promise<{ alreadySaved: boolean }>;
+  unsaveProperty(userId: string, propertyId: string): Promise<{ wasSaved: boolean }>;
 }
+
+export interface SavedPropertyItem extends Omit<PropertyListItem, 'area' | 'media'> {
+  area?: {
+    id: string;
+    name: string;
+    parent_area_id: string | null;
+    city: string;
+  } | null;
+  user?: {
+    id: string;
+    full_name: string;
+    avatar_url: string | null;
+  } | null;
+  media?: {
+    id: string;
+    property_id: string;
+    media_type: string;
+    url: string;
+    public_id: string;
+    thumbnail_url: string | null;
+    display_order: number;
+  }[];
+}
+

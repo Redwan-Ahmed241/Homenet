@@ -72,7 +72,7 @@ async function main() {
   console.log('  ✓ Admin permissions assigned (all 9)');
 
   // Buyer gets: create_listing, manage_areas, manage_properties
-  const buyerPermissions = ['perm-003', 'perm-008', 'perm-009'];
+  const buyerPermissions = ['perm-003', 'perm-009'];
 
   for (const permId of buyerPermissions) {
     await prisma.rolePermission.upsert({

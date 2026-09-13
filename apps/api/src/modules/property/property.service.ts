@@ -635,4 +635,47 @@ export class PropertyService {
 
     return verification;
   }
+
+  async findSavedProperties(userId: string) {
+    return this.propertyRepo.findSavedByUser(userId);
+  }
+
+  async saveProperty(propertyId: string, userId: string) {
+    const property = await this.propertyRepo.findById(propertyId);
+    if (!property || property.status !== 'active') {
+      this.logger.warn(`saveProperty failed — property not found or not active: ${propertyId}`, {
+        fileName: 'property.service.ts',
+        functionName: 'saveProperty',
+        lineNumber: 644,
+      });
+      throw new AppException(PROPERTY_ERRORS.PROPERTY_NOT_FOUND);
+    }
+
+    const { alreadySaved } = await this.propertyRepo.saveProperty(userId, propertyId);
+
+    return {
+      message: alreadySaved ? 'Property already saved' : 'Property saved successfully',
+      saved: true,
+    };
+  }
+
+  async unsaveProperty(propertyId: string, userId: string) {
+    const property = await this.propertyRepo.findById(propertyId);
+    if (!property) {
+      this.logger.warn(`unsaveProperty failed — property not found: ${propertyId}`, {
+        fileName: 'property.service.ts',
+        functionName: 'unsaveProperty',
+        lineNumber: 676,
+      });
+      throw new AppException(PROPERTY_ERRORS.PROPERTY_NOT_FOUND);
+    }
+
+    const { wasSaved } = await this.propertyRepo.unsaveProperty(userId, propertyId);
+
+    return {
+      message: wasSaved ? 'Property unsaved successfully' : 'Property was not saved',
+      saved: false,
+    };
+  }
 }
+
