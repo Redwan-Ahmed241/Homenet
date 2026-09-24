@@ -123,9 +123,10 @@ export class PrismaPropertyRepository implements IPropertyRepository {
   } as const;
 
   async findPublished(query: PropertyQueryParams): Promise<PaginatedResult<PropertyListItem>> {
+    const status = query.status === 'sold' ? 'sold' : 'active';
     const where: any = {
       ...this.buildWhereFromQuery(query),
-      status: 'active',
+      status,
     };
     const orderBy = this.buildOrderBy(query.sort_by);
     const skip = (query.page - 1) * query.limit;
@@ -160,7 +161,8 @@ export class PrismaPropertyRepository implements IPropertyRepository {
     const latDelta = radiusKm / 111.0;
     const lngDelta = radiusKm / (111.0 * Math.cos((lat * Math.PI) / 180));
 
-    const baseWhere: any = { ...this.buildWhereFromQuery(query), status: 'active' };
+    const status = query.status === 'sold' ? 'sold' : 'active';
+    const baseWhere: any = { ...this.buildWhereFromQuery(query), status };
     const whereWithProximity: any = {
       ...baseWhere,
       location_lat: { gte: lat - latDelta, lte: lat + latDelta },
