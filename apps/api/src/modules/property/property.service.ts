@@ -97,7 +97,7 @@ export class PropertyService {
     return this.cacheService.getOrSet(cacheKey, async () => {
       const property = await this.propertyRepo.findPublishedById(id);
 
-      if (!property || property.status !== 'active') {
+      if (!property || (property.status !== 'active' && property.status !== 'sold')) {
         this.logger.warn(`Property not found: ${id}`, {
           fileName: 'property.service.ts',
           functionName: 'findOne',
