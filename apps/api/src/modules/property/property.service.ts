@@ -33,7 +33,7 @@ export class PropertyService {
   }
 
   private async invalidateListCache() {
-    await this.cacheService.del('properties:list:all');
+    await this.cacheService.delMany(['properties:list:all', 'properties:sold:all']);
   }
 
   private async invalidateDetailCache(id: string) {
@@ -66,6 +66,41 @@ export class PropertyService {
       city: city || undefined,
     };
     const cacheKey = this.generateCacheKey('properties:list', normalizedQuery);
+
+    return this.cacheService.getOrSet(cacheKey, async () => {
+      const {
+        lat, lng, radius,
+        ...rest
+      } = normalizedQuery;
+
+      const queryParams = {
+        ...rest,
+        page: rest.page ?? 1,
+        limit: rest.limit ?? 20,
+        sort_by: rest.sort_by ?? 'created_at_desc',
+        lat,
+        lng,
+        radius,
+      };
+
+      if (lat !== undefined && lng !== undefined && radius !== undefined) {
+        return this.propertyRepo.findWithProximitySearch(queryParams);
+      }
+
+      return this.propertyRepo.findPublished(queryParams);
+    }, CACHE_TTL.LIST);
+  }
+
+  async findSold(query: PropertyQueryDto) {
+    const search = (query.search || query.query)?.trim();
+    const city = (query.city || query.location)?.trim();
+    const normalizedQuery = {
+      ...query,
+      search: search || undefined,
+      city: city || undefined,
+      status: 'sold' as const,
+    };
+    const cacheKey = this.generateCacheKey('properties:sold', normalizedQuery);
 
     return this.cacheService.getOrSet(cacheKey, async () => {
       const {

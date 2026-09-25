@@ -62,6 +62,14 @@ export class PropertyController {
     return this.propertyService.findSavedProperties(user.id);
   }
 
+  // ── Public: Sold Properties (static route before @Get(':id')) ─
+
+  @Public()
+  @Get('sold')
+  findSold(@Query() query: PropertyQueryDto) {
+    return this.propertyService.findSold(query);
+  }
+
   @Public()
   @Get(':id')
   findOne(@Param('id') id: string) {
