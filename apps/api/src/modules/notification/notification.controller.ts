@@ -8,6 +8,7 @@ import {
   Patch,
   Query,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../../common/decorators/current-user.decorator.js';
 import { NotificationService } from './notification.service.js';
@@ -21,6 +22,11 @@ import {
  * `?audience=user` for the app, `?audience=admin` for the admin panel.
  */
 @Controller('v1/notifications')
+// The app polls the unread count once a minute. Without its own limit this
+// controller falls under the global default of 10 requests per minute per IP,
+// and behind shared IPs (office NAT, mobile carrier NAT) a few signed-in users
+// would exhaust it between them.
+@Throttle({ default: { limit: 120, ttl: 60000 } })
 export class NotificationController {
   constructor(private readonly notifications: NotificationService) {}
 
