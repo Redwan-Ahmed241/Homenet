@@ -4,6 +4,7 @@ import { PropertyController } from './property.controller.js';
 import { AppException } from '../../common/errors/app.exception.js';
 import { LoggerService } from '../../common/logger/logger.service.js';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BACKGROUND_TASK_SERVICE } from '../../infrastructure/background-task/background-task.constants.js';
 import { ResponseInterceptor } from '../../common/interceptors/response.interceptor.js';
 import { of, firstValueFrom } from 'rxjs';
@@ -61,6 +62,13 @@ describe('Saved Properties Feature', () => {
         { provide: 'IUploadService', useValue: mockUploadService },
         { provide: ConfigService, useValue: mockConfigService },
         { provide: BACKGROUND_TASK_SERVICE, useValue: mockBackgroundTaskService },
+        {
+          provide: EventEmitter2,
+          useValue: {
+            emit: jest.fn(),
+            emitAsync: jest.fn().mockResolvedValue([]),
+          },
+        },
       ],
     }).compile();
 

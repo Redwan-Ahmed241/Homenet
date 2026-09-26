@@ -55,6 +55,9 @@ export class PrismaPropertyRepository implements IPropertyRepository {
     if (query.area_id) where.area_id = query.area_id;
     if (query.type) where.type = query.type;
     if (query.listing_type) where.listing_type = query.listing_type;
+    if (query.subtype) {
+      where.subtype = { equals: query.subtype, mode: 'insensitive' };
+    }
     if (query.is_verified !== undefined) where.is_verified = query.is_verified;
     const city = (query.city || query.location)?.trim();
     if (city) {
@@ -76,13 +79,30 @@ export class PrismaPropertyRepository implements IPropertyRepository {
       if (query.max_area !== undefined) where.area_size.lte = query.max_area;
     }
 
-    if (query.bedrooms !== undefined) {
-      where.amenities = { path: ['bedrooms'], equals: query.bedrooms };
+    // Bedrooms and bathrooms live in the amenities JSON. Each condition is its
+    // own AND entry: the previous single `where.amenities` object let the
+    // bathrooms filter overwrite the bedrooms one, and matched exact counts
+    // where the app asks for a minimum.
+    const minBedrooms = query.min_bedrooms ?? query.bedrooms;
+    const minBathrooms = query.min_bathrooms ?? query.bathrooms;
+    const amenityConditions: Record<string, any>[] = [];
+    if (minBedrooms !== undefined) {
+      amenityConditions.push({
+        amenities: { path: ['bedrooms'], gte: minBedrooms },
+      });
     }
-
-    if (query.bathrooms !== undefined) {
-      const amenitiesFilter: any = where.amenities ? { ...where.amenities } : {};
-      where.amenities = { ...amenitiesFilter, path: ['bathrooms'], equals: query.bathrooms };
+    if (query.max_bedrooms !== undefined) {
+      amenityConditions.push({
+        amenities: { path: ['bedrooms'], lte: query.max_bedrooms },
+      });
+    }
+    if (minBathrooms !== undefined) {
+      amenityConditions.push({
+        amenities: { path: ['bathrooms'], gte: minBathrooms },
+      });
+    }
+    if (amenityConditions.length > 0) {
+      where.AND = amenityConditions;
     }
 
     const searchTerm = (query.search || query.query)?.trim();
@@ -265,6 +285,9 @@ export class PrismaPropertyRepository implements IPropertyRepository {
     address: string | null;
     location_lat: number | null;
     location_lng: number | null;
+    subtype: string | null;
+    price_currency: string;
+    amenities: unknown;
   } | null> {
     const property = await this.prisma.property.findUnique({
       where: { id },
@@ -283,6 +306,9 @@ export class PrismaPropertyRepository implements IPropertyRepository {
         address: true,
         location_lat: true,
         location_lng: true,
+        subtype: true,
+        price_currency: true,
+        amenities: true,
       },
     });
 

@@ -1,5 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LoggerService } from '../../../common/logger/logger.service.js';
+import { EventEmitter2 } from '@nestjs/event-emitter';
+import { PrismaService } from '../../../config/prisma/prisma.service.js';
 import { PropertyService } from '../../property/property.service.js';
 import { VERIFICATION_SERVICE } from '../verification.constants.js';
 import type { IVerificationService } from '../interfaces/verification.service.interface.js';
@@ -40,6 +42,21 @@ describe('VerificationService', () => {
         {
           provide: LoggerService,
           useValue: mockLogger,
+        },
+        {
+          provide: PrismaService,
+          useValue: {
+            property: {
+              findUnique: jest.fn().mockResolvedValue({ user_id: 'owner-1' }),
+            },
+          },
+        },
+        {
+          provide: EventEmitter2,
+          useValue: {
+            emit: jest.fn(),
+            emitAsync: jest.fn().mockResolvedValue([]),
+          },
         },
       ],
     }).compile();
