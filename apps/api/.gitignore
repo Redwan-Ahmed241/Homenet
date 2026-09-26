@@ -10,3 +10,6 @@ postman/environments/*.local.json
 
 # Local asset files uploaded to Cloudinary
 asset/
+# Plaintext LLM API keys for scripts/seed-llm-keys.ts
+keys.json
+*.keys.json

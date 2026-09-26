@@ -14,7 +14,9 @@ export class LoggerService implements OnModuleInit {
 
     const logFormat = winston.format.printf(
       ({ timestamp, level, message, fileName, functionName, lineNumber }) => {
-        return `${timestamp} | ${fileName || '-'} | ${functionName || '-'} | ${lineNumber || '-'} | ${level} | ${message}`;
+        // Never let an LLM API key reach the logs, whatever the call site.
+        const safeMessage = String(message).replace(/gsk_[A-Za-z0-9]{8,}/g, 'gsk_***');
+        return `${timestamp} | ${fileName || '-'} | ${functionName || '-'} | ${lineNumber || '-'} | ${level} | ${safeMessage}`;
       },
     );
 

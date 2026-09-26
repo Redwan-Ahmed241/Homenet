@@ -20,6 +20,7 @@ import { BackgroundTaskModule } from './infrastructure/background-task/backgroun
 import { NotificationModule } from './infrastructure/notification/notification.module.js';
 import { VerificationModule } from './modules/verification/verification.module.js';
 import { EventsModule } from './infrastructure/events/events.module.js';
+import { AiModule } from './modules/ai/ai.module.js';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { EventsModule } from './infrastructure/events/events.module.js';
     AreaModule,
     PropertyModule,
     VerificationModule,
+    AiModule,
   ],
   controllers: [AppController],
   providers: [
