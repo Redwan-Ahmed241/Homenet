@@ -66,6 +66,10 @@ Error responses follow this shape:
    - [Admin: List All Properties](#610-admin-list-all-properties)
    - [Admin: Update Property](#611-admin-update-property)
    - [Admin: Hard Delete Property](#612-admin-hard-delete-property)
+7. [AI (Groq LLM)](#7-ai-groq-llm)
+   - [AI Smart Search](#71-ai-smart-search)
+   - [AI Listing Generator](#72-ai-listing-generator)
+   - [Testing the Key Rotation & Circuit Breaker](#73-testing-the-key-rotation--circuit-breaker)
 
 ---
 
@@ -2147,6 +2151,325 @@ Authorization: Bearer <access_token>
 
 ---
 
+## 7. AI (Groq LLM)
+
+All LLM calls run on the backend. The client never sends or receives an LLM API key. The backend holds a pool of Groq keys (encrypted in the `llm_api_keys` table) and uses **a different key for every LLM call**, rotating across Groq accounts. If an account hits its rate limit, the backend quietly retries on another account (up to 3 attempts).
+
+> **Before testing:**
+> 1. `.env` must contain `LLM_MASTER_ENCRYPTION_KEY` (64 hex chars) and the `LLM_*` variables (see `.env.example`).
+> 2. Keys must be seeded: put them in `keys.json` (git-ignored) and run `npm run seed:llm-keys`.
+> 3. **With the dummy keys currently seeded, every AI call ends in `503`.** Groq rejects dummy keys with 401, so each one used gets marked `REVOKED`. That is expected, and is a good way to test the failover path (see [7.3](#73-testing-the-key-rotation--circuit-breaker)). Real answers need real Groq keys.
+>
+> Both endpoints are rate limited to **20 requests per 60 seconds**.
+
+---
+
+### 7.1 AI Smart Search
+
+### `POST /v1/ai/search`
+
+Natural-language property search. **No authentication required.**
+
+The backend:
+1. Asks the LLM to turn the sentence into structured filters (cached for 10 minutes per identical query).
+2. Queries **only verified, active** listings in PostgreSQL with those filters.
+3. Asks the LLM for up to 3 short "why it matches" badges per listing, in one call for the whole page.
+
+Prices are understood in BDT (`lakh` = 100,000, `crore` = 10,000,000). Area matching is case-insensitive and partial (`"gulshan"` matches `Gulshan-1` and `Gulshan-2`).
+
+**Request:**
+
+```
+POST http://localhost:3000/v1/ai/search
+Content-Type: application/json
+```
+
+```json
+{
+  "query": "3-bed apartment in Gulshan under 6 crore with parking",
+  "page": 1,
+  "limit": 10
+}
+```
+
+| Field   | Type    | Required | Rules                          |
+|---------|---------|----------|--------------------------------|
+| `query` | string  | Yes      | 3–300 characters               |
+| `page`  | integer | No       | 1–100, default `1`             |
+| `limit` | integer | No       | 1–20, default `10`             |
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "query": "3-bed apartment in Gulshan under 6 crore with parking",
+    "filters": {
+      "area": "Gulshan",
+      "listing_type": null,
+      "type": "residential",
+      "min_price": null,
+      "max_price": 60000000,
+      "bedrooms": 3,
+      "bathrooms": null,
+      "amenities": ["parking"]
+    },
+    "listings": [
+      {
+        "id": "uuid-of-property",
+        "title": "Luxury 5-Bed Apartment in Gulshan-2",
+        "type": "residential",
+        "subtype": "apartment",
+        "listing_type": "sale",
+        "price": 58000000,
+        "price_currency": "BDT",
+        "area_size": 3200,
+        "area_unit": "sqft",
+        "address": "Road 90, Gulshan-2",
+        "amenities": { "bedrooms": 5, "bathrooms": 4, "parking": "covered", "gym": true },
+        "is_verified": true,
+        "published_at": "2026-08-01T10:00:00.000Z",
+        "area": { "id": "gulshan-2-dhaka", "name": "Gulshan-2", "city": "Dhaka" },
+        "media": [
+          { "id": "uuid-of-media", "url": "https://res.cloudinary.com/...", "thumbnail_url": "https://res.cloudinary.com/..." }
+        ],
+        "ai_badges": ["5 beds, more than asked", "Under budget", "Covered parking"]
+      }
+    ],
+    "pagination": { "total": 2, "page": 1, "limit": 10, "total_pages": 1 }
+  }
+}
+```
+
+> - `filters` shows exactly what the backend searched for. Any field set to `null` was not applied.
+> - `ai_badges` can be an **empty array**. If the badge step fails, listings are still returned without badges.
+> - No matches returns `listings: []` and `total: 0` (no second LLM call is made).
+
+**Error — Validation (400):**
+
+```json
+{
+  "success": false,
+  "message": "query must be longer than or equal to 3 characters",
+  "error_code": 1001,
+  "data": { "errors": ["query must be longer than or equal to 3 characters"] }
+}
+```
+
+**Error — Query too short after cleaning (400):** returned when the query is only symbols or control characters.
+
+```json
+{
+  "success": false,
+  "message": "Please describe what you are looking for in a few more words.",
+  "error_code": 1603,
+  "data": null
+}
+```
+
+**Error — AI temporarily unavailable (503):** all attempts failed, or every key or account is cooling down or revoked. The response carries the header `Retry-After: 30`.
+
+```json
+{
+  "success": false,
+  "message": "AI service is experiencing high demand. Please try again in a few moments.",
+  "error_code": 1600,
+  "data": null
+}
+```
+
+**Error — Unexpected AI output (502):**
+
+```json
+{
+  "success": false,
+  "message": "The AI service returned an unexpected response. Please try again.",
+  "error_code": 1601,
+  "data": null
+}
+```
+
+**Error — Rate limited (429):** more than 20 requests per minute.
+
+```json
+{
+  "success": false,
+  "message": "ThrottlerException: Too Many Requests",
+  "error_code": 1000,
+  "data": null
+}
+```
+
+---
+
+### 7.2 AI Listing Generator
+
+### `POST /v1/ai/generate-listing`
+
+Generates marketing copy for a seller's listing: an SEO headline, English and Bengali descriptions, platform amenity tags, and a price-per-sqft analysis. **JWT required.**
+
+The price analysis is **calculated by the backend** from real verified active listings with the same area, listing type and property type. The LLM only writes the one-sentence summary.
+
+**Request:**
+
+```
+POST http://localhost:3000/v1/ai/generate-listing
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+```json
+{
+  "area_id": "gulshan-dhaka",
+  "type": "residential",
+  "listing_type": "sale",
+  "price": 35000000,
+  "area_size": 2400,
+  "bedrooms": 3,
+  "bathrooms": 3,
+  "notes": "south facing, 2 car parking, lift, generator, near Gulshan 2 circle"
+}
+```
+
+| Field          | Type    | Required | Rules                                           |
+|----------------|---------|----------|-------------------------------------------------|
+| `area_id`      | string  | Yes      | Must be an existing area id (max 100 chars)      |
+| `type`         | enum    | Yes      | `residential`, `commercial`, `land`, `parking`  |
+| `listing_type` | enum    | Yes      | `sale`, `rent`                                  |
+| `price`        | number  | Yes      | BDT, ≥ 1                                        |
+| `area_size`    | number  | Yes      | In **sqft**, 1 – 10,000,000                     |
+| `bedrooms`     | integer | No       | 0–50                                            |
+| `bathrooms`    | integer | No       | 0–50                                            |
+| `notes`        | string  | No       | Rough seller notes, max 1000 chars              |
+
+**Response (200):**
+
+```json
+{
+  "success": true,
+  "message": "OK",
+  "data": {
+    "headline": "Spacious 3-Bed South-Facing Apartment for Sale in Gulshan",
+    "description_en": "Discover comfortable city living in this 2,400 sqft south-facing apartment in Gulshan...",
+    "description_bn": "গুলশানে ২,৪০০ বর্গফুটের দক্ষিণমুখী এই অ্যাপার্টমেন্টে...",
+    "amenity_tags": ["parking", "lift", "generator"],
+    "price_analysis": {
+      "your_price_per_sqft": 14583,
+      "area_avg_price_per_sqft": 13200,
+      "sample_size": 4,
+      "diff_pct": 10.5,
+      "summary": "At 14,583 BDT/sqft, this listing is about 10.5% above the Gulshan average of 13,200 BDT/sqft."
+    }
+  }
+}
+```
+
+> When there are no comparable listings, `area_avg_price_per_sqft` and `diff_pct` are `null` and `sample_size` is `0`.
+
+**Error — Area not found (404):**
+
+```json
+{
+  "success": false,
+  "message": "Area not found",
+  "error_code": 1400,
+  "data": null
+}
+```
+
+**Error — Validation (400):**
+
+```json
+{
+  "success": false,
+  "message": "type must be one of the following values: residential, commercial, land, parking; price must not be less than 1",
+  "error_code": 1001,
+  "data": {
+    "errors": [
+      "type must be one of the following values: residential, commercial, land, parking",
+      "price must not be less than 1"
+    ]
+  }
+}
+```
+
+**Error — Missing/invalid JWT (401):**
+
+```json
+{
+  "success": false,
+  "message": "Unauthorized",
+  "error_code": 1100,
+  "data": null
+}
+```
+
+**Error — AI temporarily unavailable (503, header `Retry-After: 30`):** same body as in 7.1 (`error_code: 1600`).
+
+**Error — Unexpected AI output (502):** `error_code: 1601`. **Request rejected by the AI provider (502):** `error_code: 1602`.
+
+---
+
+### 7.3 Testing the Key Rotation & Circuit Breaker
+
+These checks prove the key pool works. They run fine with **dummy keys**.
+
+1. **Send one search:**
+
+   ```
+   POST http://localhost:3000/v1/ai/search
+   Content-Type: application/json
+
+   { "query": "2 bed flat for rent in Banani with lift" }
+   ```
+
+   With dummy keys, expect `503` with `Retry-After: 30`.
+
+2. **Check the server log.** Each attempt must use a key from a **different account**:
+
+   ```
+   LLM search-filters attempt 1 → llm-key-01 (acct-01)
+   LLM key llm-key-01 (gsk_...aa1f) revoked: HTTP 401. Needs admin review.
+   LLM search-filters attempt 2 → llm-key-06 (acct-02)
+   ...
+   LLM search-filters gave up after trying 3 account(s)
+   ```
+
+3. **Send another search.** Rotation continues where it stopped (`acct-04`, `acct-05`, …), even from a second server instance, because the position comes from the database sequence `llm_rotation_seq`.
+
+4. **Check telemetry in Neon:**
+
+   ```sql
+   SELECT key_alias, account_id, status, success_count, failure_count, last_error, cooldown_until
+   FROM llm_api_keys ORDER BY account_id, key_alias;
+   ```
+
+   Used dummy keys show `status = 'REVOKED'`, `failure_count = 1` and `last_error` starting with `401:`.
+
+5. **Reset after testing:**
+
+   ```sql
+   UPDATE llm_api_keys SET status='ACTIVE', success_count=0, failure_count=0, last_success_at=NULL,
+     last_failed_at=NULL, last_error=NULL, cooldown_until=NULL, updated_at=NOW();
+   ALTER SEQUENCE llm_rotation_seq RESTART WITH 1;
+   ```
+
+**Expected behaviour with real keys:**
+
+| Situation | What the backend does | What the client sees |
+|---|---|---|
+| Normal success | Records success, moves to the next key for the next call | `200` |
+| Account returns 429 | Cools down the **whole account** (`retry-after` seconds, default 60), retries on another account | `200` (no error) |
+| Account has ≤ 2 requests left | Cools the account down early (soft limit) | `200` |
+| Key returns 401/403 | Marks only that key `REVOKED`, retries on another account | `200` |
+| 3 attempts fail / no usable key | Gives up | `503` + `Retry-After: 30` |
+
+Unit tests for all of the above: `npx jest src/modules/ai` (38 tests).
+
+---
+
 ## Error Codes Quick Reference
 
 | Code | Description | HTTP Status |
@@ -2179,6 +2502,10 @@ Authorization: Bearer <access_token>
 | 1520 | Invalid status transition | 400 |
 | 1521 | Only draft properties can be submitted | 400 |
 | 1522 | Only active/sold properties can be archived | 400 |
+| 1600 | AI service unavailable (all keys/accounts failed or cooling down) — sends `Retry-After: 30` | 503 |
+| 1601 | AI returned an unexpected response | 502 |
+| 1602 | AI provider rejected the request | 502 |
+| 1603 | AI search query too short | 400 |
 
 ---
 
@@ -2204,9 +2531,14 @@ Authorization: Bearer <access_token>
 18. **Submit for Verification** — Submit a completed draft property for review via `POST /v1/properties/:id/submit` (JWT required)
 19. **Add Media** — Attach images/videos to your property via `POST /v1/properties/:id/media` (JWT required)
 20. **Archive Property** — Archive an active/sold property via `DELETE /v1/properties/:id` (JWT required)
+21. **AI Search** — Search in plain language via `POST /v1/ai/search` (no auth needed). With dummy keys, expect `503` + `Retry-After: 30`.
+22. **AI Listing Generator** — Generate listing copy via `POST /v1/ai/generate-listing` (JWT required)
+23. **Check Key Telemetry** — Inspect `llm_api_keys` in Neon to confirm rotation, revocation and counters ([7.3](#73-testing-the-key-rotation--circuit-breaker))
 
 > **For Roles & Permissions**, you'll need to insert roles/permissions directly into the database first (there's no seed data). Use raw SQL or a Prisma script to create roles and permissions before testing those endpoints.
 >
 > **For Areas**, seed data is available. Run `npm run seed:areas` to populate 31 Dhaka areas (10 top-level + 21 children). Read endpoints require no authentication. Write endpoints (create/update/delete) require a JWT with the `manage_areas` permission.
 >
 > **For Properties**, seed data is available. Run `npm run seed:properties` to populate 10 sample properties across Dhaka areas (Gulshan, Banani, Bashundhara, Dhanmondi, Uttara, Mirpur, Baridhara, Mohammadpur, Motijheel). Requires `seed:areas` to be run first. Read endpoints require no authentication. User endpoints require a JWT. Admin endpoints require the `manage_properties` permission.
+>
+> **For AI**, keys must be seeded. Put `[{ "alias": "llm-key-01", "account_id": "acct-01", "key": "gsk_..." }]` entries in `keys.json` (git-ignored) and run `npm run seed:llm-keys` (add `-- --prune` to delete aliases not in the file). The `llm_api_keys` table and `llm_rotation_seq` sequence are created manually from `prisma/manual-sql/001_llm_api_keys.sql`. **Never run `prisma migrate` against Neon for this table.** AI Search only returns listings that are `active` **and** verified, so verify some seeded properties first to get results.
