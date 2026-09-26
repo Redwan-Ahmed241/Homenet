@@ -19,6 +19,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { BackgroundTaskModule } from './infrastructure/background-task/background-task.module.js';
 import { NotificationModule } from './infrastructure/notification/notification.module.js';
 import { VerificationModule } from './modules/verification/verification.module.js';
+import { NotificationsModule } from './modules/notification/notifications.module.js';
 import { EventsModule } from './infrastructure/events/events.module.js';
 
 @Module({
@@ -51,6 +52,7 @@ import { EventsModule } from './infrastructure/events/events.module.js';
     AreaModule,
     PropertyModule,
     VerificationModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [
