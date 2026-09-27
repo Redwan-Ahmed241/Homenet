@@ -70,7 +70,7 @@ describe('PrismaNotificationService', () => {
           some: {
             role: {
               role_permissions: {
-                some: { permission: { name: 'manage_properties' } },
+                some: { permission: { name: 'moderate_listing' } },
               },
             },
           },
