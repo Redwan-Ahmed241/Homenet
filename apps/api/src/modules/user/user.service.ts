@@ -8,6 +8,7 @@ import type { UpdateUserDto } from './dto/update-user.dto.js';
 import type { IUserRepository } from './interfaces/user-repository.interface.js';
 import type { IUploadService } from '../../common/upload/interfaces/upload.service.interface.js';
 import { UPLOAD_FOLDERS, ALLOWED_MIMETYPES, UPLOAD_LIMITS_MB } from '../../common/upload/upload.constants.js';
+import { RoleService } from '../role/role.service.js';
 
 @Injectable()
 export class UserService {
@@ -16,6 +17,7 @@ export class UserService {
     private readonly logger: LoggerService,
     @Inject('ICacheService') private readonly cacheService: ICacheService,
     @Inject('IUploadService') private readonly uploadService: IUploadService,
+    private readonly roleService: RoleService,
   ) {}
 
   async findAll() {
@@ -26,7 +28,19 @@ export class UserService {
     return this.cacheService.getOrSet(`users:profile:${id}`, () => this.userRepo.findOne(id), CACHE_TTL.DETAIL);
   }
 
-  async update(id: string, dto: UpdateUserDto) {
+  async update(id: string, dto: UpdateUserDto, currentUserId: string) {
+    if (currentUserId !== id) {
+      const hasManageUsers = await this.roleService.hasPermission(currentUserId, 'manage_users');
+      if (!hasManageUsers) {
+        this.logger.warn(`User ${currentUserId} attempted to update user ${id} without permission`, {
+          fileName: 'user.service.ts',
+          functionName: 'update',
+          lineNumber: 36,
+        });
+        throw new AppException(USER_ERRORS.USER_ACCESS_DENIED);
+      }
+    }
+
     const existing = await this.userRepo.findById(id);
     if (!existing) {
       this.logger.warn(`Update failed — user not found for id: ${id}`, {

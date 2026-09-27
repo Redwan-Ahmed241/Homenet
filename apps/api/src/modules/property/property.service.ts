@@ -1,5 +1,6 @@
 import { Injectable, Inject, ForbiddenException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import type { ICacheService } from '../../common/cache/cache.service.interface.js';
 import { CACHE_TTL } from '../../common/cache/cache.service.interface.js';
 import { LoggerService } from '../../common/logger/logger.service.js';
@@ -15,6 +16,18 @@ import { UPLOAD_FOLDERS, ALLOWED_MIMETYPES, UPLOAD_LIMITS_MB } from '../../commo
 import type { IUploadService } from '../../common/upload/interfaces/upload.service.interface.js';
 import { BACKGROUND_TASK_SERVICE } from '../../infrastructure/background-task/background-task.constants.js';
 import type { IBackgroundTaskService } from '../../infrastructure/background-task/interfaces/background-task.service.interface.js';
+import {
+  LISTING_EVENTS,
+  ListingPriceChangedEvent,
+  ListingStatusChangedEvent,
+  ListingSubmittedEvent,
+  type ListingStatus,
+} from './events/listing.events.js';
+import {
+  normalizeAmenities,
+  validateListingShape,
+  type ListingShape,
+} from './property.rules.js';
 
 @Injectable()
 export class PropertyService {
@@ -26,6 +39,7 @@ export class PropertyService {
     private readonly configService: ConfigService,
     @Inject(BACKGROUND_TASK_SERVICE)
     private readonly backgroundTaskService: IBackgroundTaskService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   private generateCacheKey(prefix: string, data: any): string {
@@ -45,16 +59,52 @@ export class PropertyService {
     await this.invalidateDetailCache(id);
   }
 
-  private validateAmenities(type: string, amenities: Record<string, any>): boolean {
-    switch (type) {
-      case 'residential':
-      case 'commercial':
-      case 'land':
-      case 'parking':
-        return true;
-      default:
-        return false;
+  /** Throws with every problem listed, so the owner can fix them all at once. */
+  private assertValidShape(shape: ListingShape, functionName: string) {
+    const problems = validateListingShape(shape);
+    if (problems.length === 0) return;
+
+    this.logger.warn(`Invalid ${shape.type} listing: ${problems.join('; ')}`, {
+      fileName: 'property.service.ts',
+      functionName,
+      lineNumber: 67,
+    });
+    throw new AppException(
+      PROPERTY_ERRORS.PROPERTY_INVALID_AMENITIES,
+      problems.join('; '),
+    );
+  }
+
+  /**
+   * Awaited on purpose. This API runs as serverless functions, where work left
+   * running after the response is sent can be frozen and never finish — so the
+   * notifications these events create are written inside the request. A
+   * listener failure is logged, never surfaced: the action itself succeeded.
+   */
+  private async emitListingEvent(name: string, event: object): Promise<void> {
+    try {
+      await this.eventEmitter.emitAsync(name, event);
+    } catch (error) {
+      this.logger.error(
+        `Listener for ${name} failed: ${error instanceof Error ? error.message : String(error)}`,
+        {
+          fileName: 'property.service.ts',
+          functionName: 'emitListingEvent',
+          lineNumber: 87,
+        },
+      );
     }
+  }
+
+  /**
+   * The only verification provider today is MockVerificationService, which
+   * invents a verdict from the listing's UUID. With notifications now visible,
+   * running it would tell real owners their documents failed checks that never
+   * happened. It runs only where VERIFICATION_MODE=mock is set deliberately —
+   * development or staging, never production.
+   */
+  private isAutomaticVerificationEnabled(): boolean {
+    return this.configService.get<string>('VERIFICATION_MODE') === 'mock';
   }
 
   async findAll(query: PropertyQueryDto) {
@@ -198,17 +248,25 @@ export class PropertyService {
         }
       }
 
-      if (dto.amenities && Object.keys(dto.amenities).length > 0) {
-        const type = dto.type ?? existing.type;
-        const valid = this.validateAmenities(type, dto.amenities);
-        if (!valid) {
-          this.logger.warn(`Invalid amenities structure for property type ${type}`, {
-            fileName: 'property.service.ts',
-            functionName: 'upsert',
-            lineNumber: 188,
-          });
-          throw new AppException(PROPERTY_ERRORS.PROPERTY_INVALID_AMENITIES);
-        }
+      // Validate the merged result whenever the update touches the listing's
+      // shape: turning a flat into a parking space must drop its bedrooms.
+      if (
+        dto.type !== undefined ||
+        dto.subtype !== undefined ||
+        dto.area_unit !== undefined ||
+        dto.amenities !== undefined
+      ) {
+        const has = (key: keyof UpsertPropertyDto) => dto[key] !== undefined;
+        const amenities = has('amenities') ? dto.amenities : existing.amenities;
+        this.assertValidShape(
+          {
+            type: dto.type ?? existing.type,
+            subtype: has('subtype') ? dto.subtype : existing.subtype,
+            areaUnit: has('area_unit') ? dto.area_unit : existing.area_unit,
+            amenities: amenities as Record<string, unknown> | null,
+          },
+          'upsert',
+        );
       }
 
       const updateData: Record<string, any> = {};
@@ -224,7 +282,9 @@ export class PropertyService {
       if (dto.location_lat !== undefined) updateData.location_lat = dto.location_lat;
       if (dto.location_lng !== undefined) updateData.location_lng = dto.location_lng;
       if (dto.address !== undefined) updateData.address = dto.address;
-      if (dto.amenities !== undefined) updateData.amenities = dto.amenities;
+      if (dto.amenities !== undefined) {
+        updateData.amenities = normalizeAmenities(dto.amenities);
+      }
       if (dto.virtual_tour_url !== undefined) updateData.virtual_tour_url = dto.virtual_tour_url;
       if (dto.area_id !== undefined) updateData.area = { connect: { id: dto.area_id } };
 
@@ -248,6 +308,40 @@ export class PropertyService {
       const updated = await this.propertyRepo.update(dto.property_id, updateData);
 
       await this.invalidateAll(dto.property_id);
+
+      const title = (dto.title ?? existing.title) || 'Your listing';
+      const statusNow = (updateData.status ?? existing.status) as ListingStatus;
+      const statusChanged =
+        updateData.status !== undefined &&
+        updateData.status !== existing.status;
+      if (statusChanged) {
+        await this.emitListingEvent(
+          LISTING_EVENTS.STATUS_CHANGED,
+          new ListingStatusChangedEvent(
+            existing.id,
+            existing.user_id,
+            title,
+            existing.status as ListingStatus,
+            statusNow,
+            isAdmin,
+          ),
+        );
+      }
+      if (dto.price !== undefined && dto.price !== existing.price) {
+        await this.emitListingEvent(
+          LISTING_EVENTS.PRICE_CHANGED,
+          new ListingPriceChangedEvent(
+            existing.id,
+            existing.user_id,
+            title,
+            statusNow,
+            existing.price,
+            dto.price,
+            dto.price_currency ?? existing.price_currency ?? 'BDT',
+          ),
+        );
+      }
+
       return updated;
     }
 
@@ -272,18 +366,15 @@ export class PropertyService {
       throw new AppException(AREA_ERRORS.AREA_NOT_FOUND);
     }
 
-    // Validate amenities only when both type and amenities are provided
-    if (dto.type && dto.amenities && Object.keys(dto.amenities).length > 0) {
-      const valid = this.validateAmenities(dto.type, dto.amenities);
-      if (!valid) {
-        this.logger.warn(`Invalid amenities structure for property type ${dto.type}`, {
-          fileName: 'property.service.ts',
-          functionName: 'upsert',
-          lineNumber: 142,
-        });
-        throw new AppException(PROPERTY_ERRORS.PROPERTY_INVALID_AMENITIES);
-      }
-    }
+    this.assertValidShape(
+      {
+        type: dto.type ?? 'residential',
+        subtype: dto.subtype,
+        areaUnit: dto.area_unit,
+        amenities: dto.amenities as Record<string, unknown> | undefined,
+      },
+      'upsert',
+    );
 
     const status = this.computeStatus(dto as unknown as Record<string, unknown>);
 
@@ -302,7 +393,7 @@ export class PropertyService {
       location_lat: dto.location_lat,
       location_lng: dto.location_lng,
       address: dto.address,
-      amenities: dto.amenities,
+      amenities: normalizeAmenities(dto.amenities),
       virtual_tour_url: dto.virtual_tour_url,
       status,
     });
@@ -609,10 +700,18 @@ export class PropertyService {
     // Create verification record
     await this.createVerification(id);
 
-    // Enqueue via BackgroundTaskService — no knowledge of setTimeout or BullMQ
-    await this.backgroundTaskService.enqueueVerification(id);
+    // Enqueue via BackgroundTaskService — no knowledge of setTimeout or BullMQ.
+    // Off unless explicitly enabled; see isAutomaticVerificationEnabled().
+    if (this.isAutomaticVerificationEnabled()) {
+      await this.backgroundTaskService.enqueueVerification(id);
+    }
 
     await this.invalidateAll(id);
+
+    await this.emitListingEvent(
+      LISTING_EVENTS.SUBMITTED,
+      new ListingSubmittedEvent(id, userId, property.title),
+    );
 
     this.logger.info(`Property ${id} submitted for verification`, {
       fileName: 'property.service.ts',

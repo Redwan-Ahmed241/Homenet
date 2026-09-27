@@ -31,6 +31,11 @@ export class PropertyQueryDto {
   @IsEnum(ListingType)
   listing_type?: ListingType;
 
+  /** e.g. apartment, house, office, covered (parking). Case-insensitive. */
+  @IsOptional()
+  @IsString()
+  subtype?: string;
+
   @IsOptional()
   @IsEnum(PropertyStatus)
   status?: PropertyStatus;
@@ -59,15 +64,38 @@ export class PropertyQueryDto {
   @Type(() => Number)
   max_area?: number;
 
+  /**
+   * Treated as a minimum ("at least N"). Its only client sends it from a
+   * "No min" control; prefer min_bedrooms, which says so.
+   */
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
   bedrooms?: number;
 
+  /** Treated as a minimum; prefer min_bathrooms. */
   @IsOptional()
   @IsNumber()
   @Type(() => Number)
   bathrooms?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  min_bedrooms?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  max_bedrooms?: number;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Type(() => Number)
+  min_bathrooms?: number;
 
   @IsOptional()
   @IsString()

@@ -19,6 +19,7 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
 import { BackgroundTaskModule } from './infrastructure/background-task/background-task.module.js';
 import { NotificationModule } from './infrastructure/notification/notification.module.js';
 import { VerificationModule } from './modules/verification/verification.module.js';
+import { NotificationsModule } from './modules/notification/notifications.module.js';
 import { EventsModule } from './infrastructure/events/events.module.js';
 import { AiModule } from './modules/ai/ai.module.js';
 
@@ -53,6 +54,7 @@ import { AiModule } from './modules/ai/ai.module.js';
     PropertyModule,
     VerificationModule,
     AiModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [

@@ -209,12 +209,12 @@ Current implementation (`MockNotificationService`) just logs — no persistence,
 ### Users (`/v1/users`)
 | Method | Path | Auth |
 |---|---|---|
-| GET | `/` | JWT |
+| GET | `/` | JWT+Admin (`manage_users`) |
 | POST | `/avatar` | JWT |
 | DELETE | `/avatar` | JWT |
 | GET | `/:id` | JWT |
-| PATCH | `/:id` | JWT |
-| DELETE | `/:id` | JWT |
+| PATCH | `/:id` | JWT (Self or Admin with `manage_users`) |
+| DELETE | `/:id` | JWT+Admin (`manage_users`) |
 
 ### Roles (`/v1/roles`)
 | Method | Path | Auth |

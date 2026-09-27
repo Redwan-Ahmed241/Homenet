@@ -11,6 +11,10 @@ export interface PropertyQueryParams {
   max_area?: number;
   bedrooms?: number;
   bathrooms?: number;
+  min_bedrooms?: number;
+  max_bedrooms?: number;
+  min_bathrooms?: number;
+  subtype?: string;
   search?: string;
   query?: string;
   is_verified?: boolean;
@@ -117,6 +121,9 @@ export interface IPropertyRepository {
     address: string | null;
     location_lat: number | null;
     location_lng: number | null;
+    subtype: string | null;
+    price_currency: string;
+    amenities: unknown;
   } | null>;
   create(data: {
     user_id: string;

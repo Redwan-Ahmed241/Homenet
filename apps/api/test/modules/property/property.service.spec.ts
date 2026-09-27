@@ -3,6 +3,7 @@ import { PropertyService } from '../../../src/modules/property/property.service.
 import { PrismaPropertyRepository } from '../../../src/modules/property/repositories/prisma-property.repository.js';
 import { LoggerService } from '../../../src/common/logger/logger.service.js';
 import { ConfigService } from '@nestjs/config';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { BACKGROUND_TASK_SERVICE } from '../../../src/infrastructure/background-task/background-task.constants.js';
 
 describe('Property Module Search & Filtering', () => {
@@ -121,6 +122,13 @@ describe('Property Module Search & Filtering', () => {
           { provide: 'IUploadService', useValue: mockUpload },
           { provide: ConfigService, useValue: mockConfig },
           { provide: BACKGROUND_TASK_SERVICE, useValue: mockBackgroundTask },
+          {
+            provide: EventEmitter2,
+            useValue: {
+              emit: jest.fn(),
+              emitAsync: jest.fn().mockResolvedValue([]),
+            },
+          },
         ],
       }).compile();
 

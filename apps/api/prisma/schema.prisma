@@ -29,6 +29,7 @@ model User {
   properties      Property[]
   user_assets     UserAsset[]
   savedProperties SavedProperty[]
+  notifications   Notification[]
 }
 
 model AuthIdentity {
@@ -324,3 +325,36 @@ model LlmApiKey {
   @@index([account_id], map: "idx_llm_keys_account")
   @@map("llm_api_keys")
 }
+
+// ─── Notifications (FR-13) ────────────────────────────────────────────────────
+// One row per recipient. Admin notifications are fanned out to every user who
+// can moderate listings at the moment of the event, so each admin keeps their
+// own read state and every query is a simple "my notifications" lookup.
+// `audience` keeps the two portals apart: the user app shows `user`, the admin
+// panel shows `admin`.
+
+enum NotificationAudience {
+  user
+  admin
+}
+
+model Notification {
+  id         String               @id @default(uuid())
+  user_id    String
+  audience   NotificationAudience @default(user)
+  type       String
+  title      String
+  message    String
+  // In-app path to open when the notification is tapped, e.g. /property/<id>
+  link       String?
+  metadata   Json?
+  read_at    DateTime?
+  created_at DateTime             @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, audience, read_at])
+  @@index([user_id, audience, created_at])
+  @@map("notifications")
+}
+

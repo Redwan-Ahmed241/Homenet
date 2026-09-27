@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { LoggerService } from '../../../common/logger/logger.service.js';
+import { VerificationService } from '../../../modules/verification/services/verification.service.js';
 import { BACKGROUND_TASK_CONFIG } from '../background-task.constants.js';
 import type { BackgroundTaskConfig } from '../background-task.constants.js';
 import { PrototypeBackgroundTaskService } from './prototype-background-task.service.js';
@@ -7,6 +8,9 @@ import { PrototypeBackgroundTaskService } from './prototype-background-task.serv
 describe('PrototypeBackgroundTaskService', () => {
   let service: PrototypeBackgroundTaskService;
   let mockLogger: Record<string, jest.Mock>;
+  const mockVerificationService = {
+    processVerification: jest.fn().mockResolvedValue(undefined),
+  };
 
   const defaultConfig: BackgroundTaskConfig = {
     verificationDelayMs: 3000,
@@ -32,6 +36,7 @@ describe('PrototypeBackgroundTaskService', () => {
           provide: LoggerService,
           useValue: mockLogger,
         },
+        { provide: VerificationService, useValue: mockVerificationService },
       ],
     }).compile();
 
@@ -65,23 +70,18 @@ describe('PrototypeBackgroundTaskService', () => {
       );
     });
 
-    it('should log the background task trigger after the configured delay', () => {
+    it('should run verification after the configured delay', () => {
       service.enqueueVerification('property-456');
 
-      // Before delay — inner log should NOT have been called yet
-      expect(mockLogger.info).toHaveBeenCalledTimes(1);
+      // Before the delay, verification has not started
+      expect(
+        mockVerificationService.processVerification,
+      ).not.toHaveBeenCalled();
 
-      // Advance all timers
       jest.advanceTimersByTime(3000);
 
-      // After delay — inner log should have been called
-      expect(mockLogger.info).toHaveBeenCalledTimes(2);
-      expect(mockLogger.info).toHaveBeenLastCalledWith(
-        'Background task triggered for property: property-456',
-        expect.objectContaining({
-          fileName: 'prototype-background-task.service.ts',
-          functionName: 'enqueueVerification',
-        }),
+      expect(mockVerificationService.processVerification).toHaveBeenCalledWith(
+        'property-456',
       );
     });
 
@@ -97,6 +97,7 @@ describe('PrototypeBackgroundTaskService', () => {
             provide: LoggerService,
             useValue: mockLogger,
           },
+          { provide: VerificationService, useValue: mockVerificationService },
         ],
       }).compile();
 
@@ -105,13 +106,17 @@ describe('PrototypeBackgroundTaskService', () => {
       const promise = customService.enqueueVerification('property-789');
       await expect(promise).resolves.toBeUndefined();
 
-      // Should not have triggered at 3000ms
+      // Not yet at 3000 ms
       jest.advanceTimersByTime(3000);
-      expect(mockLogger.info).toHaveBeenCalledTimes(1); // Only the enqueue log
+      expect(
+        mockVerificationService.processVerification,
+      ).not.toHaveBeenCalled();
 
-      // Should trigger at 5000ms
+      // Runs at 5000 ms
       jest.advanceTimersByTime(2000);
-      expect(mockLogger.info).toHaveBeenCalledTimes(2);
+      expect(mockVerificationService.processVerification).toHaveBeenCalledWith(
+        'property-789',
+      );
     });
   });
 });

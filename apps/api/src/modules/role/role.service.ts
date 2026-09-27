@@ -53,4 +53,9 @@ export class RoleService {
       CACHE_TTL.DETAIL,
     );
   }
+
+  async hasPermission(userId: string, permission: string): Promise<boolean> {
+    const permissions = await this.getUserPermissions(userId);
+    return permissions.includes(permission);
+  }
 }
