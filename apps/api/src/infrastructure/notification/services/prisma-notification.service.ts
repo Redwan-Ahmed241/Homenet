@@ -16,8 +16,12 @@ import type {
  */
 @Injectable()
 export class PrismaNotificationService implements INotificationService {
-  /** Mirrors PermissionsGuard: whoever can moderate listings gets admin notifications. */
-  static readonly MODERATOR_PERMISSION = 'manage_properties';
+  /**
+   * Who gets admin notifications. Not manage_properties: the default
+   * buyer_seller role every signup receives holds it, so it would send every
+   * new listing to every user. Only the admin role holds moderate_listing.
+   */
+  static readonly MODERATOR_PERMISSION = 'moderate_listing';
 
   constructor(
     private readonly prisma: PrismaService,

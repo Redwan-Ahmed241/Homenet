@@ -1,5 +1,6 @@
 import {
   Controller,
+  ForbiddenException,
   Get,
   Post,
   Delete,
@@ -8,6 +9,8 @@ import {
 } from '@nestjs/common';
 import { RoleService } from './role.service';
 import { Permissions } from '../../common/decorators/permissions.decorator.js';
+import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
+import type { AuthenticatedUser } from '../../common/decorators/current-user.decorator.js';
 import { AssignRoleDto } from './dto/assign-role.dto.js';
 import { AssignPermissionDto } from './dto/assign-permission.dto.js';
 
@@ -29,9 +32,17 @@ export class RoleController {
 
   // ── User ↔ Role ────────────────────────────────────────
 
-  @Permissions('view_roles')
+  // Anyone may read their own roles: the app loads them after every sign-in
+  // to decide what to show. Someone else's roles still need view_roles. The
+  // check lives here because PermissionsGuard cannot tell whose roles these are.
   @Get('user/:userId')
-  getUserRoles(@Param('userId') userId: string) {
+  async getUserRoles(
+    @Param('userId') userId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    if (userId !== user.id && !(await this.roleService.hasPermission(user.id, 'view_roles'))) {
+      throw new ForbiddenException();
+    }
     return this.roleService.getUserRoles(userId);
   }
 
