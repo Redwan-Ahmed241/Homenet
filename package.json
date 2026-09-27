@@ -8,7 +8,9 @@
     "packages/*"
   ],
   "scripts": {
-    "api": "npm run start:dev -w apps/api"
+    "api": "npm run start:dev -w apps/api",
+    "start:dev": "npm run start:dev -w apps/api",
+    "dev": "npm run start:dev -w apps/api"
   },
   "dependencies": {
     "@vercel/speed-insights": "^2.0.0"
