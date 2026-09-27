@@ -18,6 +18,11 @@ export const USER_ERRORS = {
     message: 'Failed to delete user',
     httpStatus: 500,
   },
+  USER_ACCESS_DENIED: {
+    code: 1203,
+    message: 'You do not have permission to modify this user',
+    httpStatus: 403,
+  },
   AVATAR_INVALID_FILE_TYPE: {
     code: 1210,
     message: 'Invalid file type. Allowed types: JPEG, PNG, WebP',

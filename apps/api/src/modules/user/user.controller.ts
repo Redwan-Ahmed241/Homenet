@@ -14,6 +14,7 @@ import { UserService } from './user.service.js';
 import { UpdateUserDto } from './dto/update-user.dto.js';
 import { CurrentUser } from '../../common/decorators/current-user.decorator.js';
 import type { AuthenticatedUser } from '../../common/decorators/current-user.decorator.js';
+import { Permissions } from '../../common/decorators/permissions.decorator.js';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -21,12 +22,14 @@ import type { AuthenticatedUser } from '../../common/decorators/current-user.dec
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
+  @Permissions('manage_users')
   @Get()
   @ApiOperation({ summary: 'List all users' })
   @ApiResponse({
     status: 200,
     description: 'Returns all users with their auth identities',
   })
+  @ApiResponse({ status: 403, description: 'Forbidden — requires manage_users permission' })
   findAll() {
     return this.userService.findAll();
   }
@@ -74,15 +77,22 @@ export class UserController {
   @ApiOperation({ summary: 'Update a user profile' })
   @ApiParam({ name: 'id', description: 'User UUID' })
   @ApiResponse({ status: 200, description: 'User updated successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden — cannot modify another user without manage_users permission' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  update(@Param('id') id: string, @Body() dto: UpdateUserDto) {
-    return this.userService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateUserDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.userService.update(id, dto, user.id);
   }
 
+  @Permissions('manage_users')
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a user' })
   @ApiParam({ name: 'id', description: 'User UUID' })
   @ApiResponse({ status: 200, description: 'User deleted successfully' })
+  @ApiResponse({ status: 403, description: 'Forbidden — requires manage_users permission' })
   @ApiResponse({ status: 404, description: 'User not found' })
   remove(@Param('id') id: string) {
     return this.userService.remove(id);

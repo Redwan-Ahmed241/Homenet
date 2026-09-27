@@ -4,9 +4,10 @@ import { UserService } from './user.service.js';
 import { PrismaUserRepository } from './repositories/prisma-user.repository.js';
 import { UploadModule } from '../../common/upload/upload.module.js';
 import { UploadService } from '../../common/upload/cloudinary.service.js';
+import { RoleModule } from '../role/role.module.js';
 
 @Module({
-  imports: [UploadModule],
+  imports: [UploadModule, RoleModule],
   controllers: [UserController],
   providers: [
     UserService,
