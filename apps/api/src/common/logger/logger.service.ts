@@ -9,6 +9,7 @@ import { LogMetadata } from './logger.interface.js';
 export class LoggerService implements OnModuleInit {
   private logger: winston.Logger;
 
+  /** Configures console and optional file logging with Groq key redaction in message text. */
   constructor() {
     const isVercel = !!process.env.VERCEL;
 

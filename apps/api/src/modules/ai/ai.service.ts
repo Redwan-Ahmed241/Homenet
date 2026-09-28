@@ -65,6 +65,7 @@ export class AiService {
   private readonly searchTimeoutMs: number;
   private readonly listingTimeoutMs: number;
 
+  /** Loads model and timeout settings and connects search, caching and listing dependencies. */
   constructor(
     private readonly prisma: PrismaService,
     private readonly llm: LlmClientService,
@@ -86,6 +87,7 @@ export class AiService {
 
   // ── AI Smart Search ─────────────────────────────────────
 
+  /** Returns paginated active, verified listings from sanitized query filters, with optional AI badges. */
   async search(dto: AiSearchDto) {
     const query = sanitizeUserText(dto.query, 300);
     if (query.length < 3) throw new AppException(AI_ERRORS.AI_QUERY_TOO_SHORT);
@@ -115,7 +117,7 @@ export class AiService {
     };
   }
 
-  // Only the query → filters step is cached; listings are always read live from the database.
+  /** Extracts and caches sanitized filters by query hash; listing results are always read live. */
   private extractFilters(query: string): Promise<SearchFilters> {
     const cacheKey = this.cache.generateKey(
       'ai:search:filters',
@@ -142,6 +144,7 @@ export class AiService {
     );
   }
 
+  /** Queries matching verified listings and their total count, preserving publication order in the returned cards. */
   private async findVerifiedListings(
     filters: SearchFilters,
     page: number,
@@ -213,7 +216,7 @@ export class AiService {
     };
   }
 
-  // Missing or non-numeric values evaluate to NULL, so those listings are excluded rather than erroring.
+  /** Builds a minimum-count SQL predicate; missing or non-numeric amenity values evaluate to NULL. */
   private amenityCountAtLeast(key: string, min: number): Prisma.Sql {
     return Prisma.sql`(CASE
       WHEN jsonb_typeof(p.amenities -> ${key}) = 'number' THEN (p.amenities ->> ${key})::numeric
@@ -268,6 +271,7 @@ export class AiService {
     }
   }
 
+  /** Keeps badges only for known listing IDs and limits each badge list and text length. */
   private parseBadges(
     raw: Record<string, unknown>,
     validIds: Set<string>,
@@ -296,6 +300,7 @@ export class AiService {
 
   // ── AI Listing Generator ────────────────────────────────
 
+  /** Validates the area and generates bilingual copy, supported amenity tags and database-derived price comparisons. */
   async generateListing(dto: AiListingGenerateDto, user: AuthenticatedUser) {
     const area = await this.prisma.area.findUnique({
       where: { id: dto.area_id },
@@ -388,6 +393,7 @@ export class AiService {
     };
   }
 
+  /** Trims and truncates required model text, throwing AI_INVALID_RESPONSE for missing or blank values. */
   private requiredText(value: unknown, maxLength: number): string {
     if (typeof value !== 'string' || value.trim().length === 0) {
       throw new AppException(AI_ERRORS.AI_INVALID_RESPONSE);

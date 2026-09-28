@@ -21,8 +21,10 @@ import { AiRetryAfterInterceptor } from './interceptors/ai-retry-after.intercept
 @Throttle({ default: { limit: 20, ttl: 60000 } })
 @UseInterceptors(AiRetryAfterInterceptor)
 export class AiController {
+  /** Connects the AI route handlers to the application service. */
   constructor(private readonly aiService: AiService) {}
 
+  /** Handles public natural-language searches for active, verified property listings. */
   @Public()
   @Post('search')
   @HttpCode(HttpStatus.OK)
@@ -33,6 +35,7 @@ export class AiController {
     return this.aiService.search(dto);
   }
 
+  /** Generates bilingual listing copy and price analysis for the authenticated caller. */
   @Post('generate-listing')
   @HttpCode(HttpStatus.OK)
   @ApiBearerAuth()

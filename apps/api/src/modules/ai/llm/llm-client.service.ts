@@ -20,6 +20,7 @@ type FailureOutcome = 'retry' | 'fatal';
 
 @Injectable()
 export class LlmClientService {
+  /** Connects shared key rotation, request telemetry and logging for Groq calls. */
   constructor(
     private readonly rotator: LlmRotatorService,
     private readonly metrics: LlmMetricsService,
@@ -89,6 +90,7 @@ export class LlmClientService {
     throw new AppException(AI_ERRORS.AI_SERVICE_UNAVAILABLE);
   }
 
+  /** Cools the leased account when response headers report at most two remaining requests. */
   private async applySoftLimit(
     lease: KeyLease,
     headers: Headers,
@@ -113,6 +115,7 @@ export class LlmClientService {
     );
   }
 
+  /** Records a scrubbed failure, applies cooldown or revocation when needed and classifies whether to retry. */
   private async handleFailure(
     lease: KeyLease,
     error: unknown,
@@ -165,6 +168,7 @@ export class LlmClientService {
     return 'fatal';
   }
 
+  /** Parses a non-null JSON object or throws AI_INVALID_RESPONSE without logging provider content. */
   private parseJson(
     content: string | null | undefined,
     label: string,

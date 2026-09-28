@@ -14,6 +14,7 @@ const RETRY_AFTER_SECONDS = '30';
 /** Adds Retry-After to 503s so clients back off; the global filter still writes the body. */
 @Injectable()
 export class AiRetryAfterInterceptor implements NestInterceptor {
+  /** Adds a 30-second Retry-After header for AI_SERVICE_UNAVAILABLE and rethrows errors for the global filter. */
   intercept(context: ExecutionContext, next: CallHandler): Observable<unknown> {
     return next.handle().pipe(
       catchError((error: unknown) => {

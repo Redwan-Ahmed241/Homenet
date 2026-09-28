@@ -69,6 +69,7 @@ export function sanitizeSearchFilters(
   };
 }
 
+/** Returns unique supported amenity tags, or an empty list for non-array input. */
 export function toAmenityTags(raw: unknown): AmenityTag[] {
   if (!Array.isArray(raw)) return [];
   return [
@@ -80,10 +81,12 @@ export function toAmenityTags(raw: unknown): AmenityTag[] {
   ];
 }
 
+/** Escapes backslashes and SQL LIKE wildcards so input matches as literal text. */
 export function escapeLikePattern(value: string): string {
   return value.replace(/[\\%_]/g, (char) => `\\${char}`);
 }
 
+/** Parses finite positive numbers, accepting numeric strings with comma separators; otherwise returns null. */
 function toPositiveNumber(value: unknown): number | null {
   const num =
     typeof value === 'string' ? Number(value.replace(/,/g, '')) : value;
@@ -92,11 +95,13 @@ function toPositiveNumber(value: unknown): number | null {
     : null;
 }
 
+/** Floors positive values up to 20 to an integer count; returns null for invalid or larger values. */
 function toCount(value: unknown): number | null {
   const num = toPositiveNumber(value);
   return num !== null && num <= 20 ? Math.floor(num) : null;
 }
 
+/** Strips unsupported area-name characters, caps length at 60 and rejects names shorter than two characters. */
 function toAreaName(value: unknown): string | null {
   if (typeof value !== 'string') return null;
   const name = value
@@ -106,6 +111,7 @@ function toAreaName(value: unknown): string | null {
   return name.length >= 2 ? name : null;
 }
 
+/** Returns a lowercase allowed enum value, or null for unsupported input. */
 function toEnumValue<T extends string>(value: unknown, allowed: T[]): T | null {
   return typeof value === 'string' && allowed.includes(value.toLowerCase() as T)
     ? (value.toLowerCase() as T)

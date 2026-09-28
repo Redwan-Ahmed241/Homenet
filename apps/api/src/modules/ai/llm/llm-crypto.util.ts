@@ -13,6 +13,7 @@ export interface EncryptedSecret {
   auth_tag: string;
 }
 
+/** Decodes a trimmed 64-character hexadecimal master key; throws for missing or invalid input. */
 export function parseMasterKey(hex: string | undefined): Buffer {
   const value = hex?.trim() ?? '';
   if (!/^[0-9a-fA-F]{64}$/.test(value)) {
@@ -23,7 +24,7 @@ export function parseMasterKey(hex: string | undefined): Buffer {
   return Buffer.from(value, 'hex');
 }
 
-// The alias is bound as additional authenticated data, so a ciphertext copied onto another row fails to decrypt.
+/** Encrypts with AES-256-GCM and a random IV, binding the alias as authenticated data; returns hex-encoded fields. */
 export function encryptSecret(
   plaintext: string,
   alias: string,
@@ -46,6 +47,7 @@ export function encryptSecret(
   };
 }
 
+/** Decrypts AES-256-GCM data bound to the alias; throws for malformed IVs, tags or failed authentication. */
 export function decryptSecret(
   secret: EncryptedSecret,
   alias: string,
@@ -69,10 +71,12 @@ export function decryptSecret(
   ]).toString('utf8');
 }
 
+/** Masks a key for display, revealing only the first and last four characters when longer than 12 characters. */
 export function maskKey(key: string): string {
   return key.length > 12 ? `${key.slice(0, 4)}...${key.slice(-4)}` : '****';
 }
 
+/** Redacts Groq key patterns from text before it is logged or stored as error telemetry. */
 export function scrubSecrets(text: string): string {
   return text.replace(GROQ_KEY_PATTERN, 'gsk_***');
 }

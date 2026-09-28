@@ -10,11 +10,13 @@ const MAX_ERROR_LENGTH = 500;
 /** Per-key telemetry, written without blocking the user's response. */
 @Injectable()
 export class LlmMetricsService {
+  /** Connects persistent key telemetry and logging for background write failures. */
   constructor(
     private readonly prisma: PrismaService,
     private readonly logger: LoggerService,
   ) {}
 
+  /** Records success asynchronously and reactivates a cooled key only when its cooldown has expired or is unset. */
   recordSuccess(keyId: string): void {
     this.runInBackground(
       'recordSuccess',
@@ -32,6 +34,7 @@ export class LlmMetricsService {
     );
   }
 
+  /** Records failure asynchronously with a redacted, length-limited error message. */
   recordFailure(keyId: string, error: string): void {
     const lastError = scrubSecrets(error).slice(0, MAX_ERROR_LENGTH);
     this.runInBackground(
@@ -46,7 +49,7 @@ export class LlmMetricsService {
     );
   }
 
-  // On Vercel, waitUntil keeps the function alive until the write lands; elsewhere it is a no-op.
+  /** Extends Vercel execution for a telemetry write and logs rejection without propagating it to the caller. */
   private runInBackground(functionName: string, write: Promise<unknown>): void {
     waitUntil(
       write.catch((error: Error) => {

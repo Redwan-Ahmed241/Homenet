@@ -30,6 +30,7 @@ interface KeyEntry {
 const IDENTIFIER = /^[A-Za-z0-9_-]{1,50}$/;
 const prisma = new PrismaClient();
 
+/** Reads a non-empty key file, validates entries and rejects duplicate aliases. */
 function readEntries(filePath: string): KeyEntry[] {
   const parsed: unknown = JSON.parse(fs.readFileSync(filePath, 'utf8'));
   if (!Array.isArray(parsed) || parsed.length === 0) {
@@ -62,6 +63,7 @@ function readEntries(filePath: string): KeyEntry[] {
   });
 }
 
+/** Decrypts an existing key, returning null when its ciphertext cannot be authenticated. */
 function tryDecrypt(
   secret: EncryptedSecret,
   alias: string,
@@ -74,6 +76,7 @@ function tryDecrypt(
   }
 }
 
+/** Upserts encrypted keys from the CLI input, verifies decryption and optionally prunes absent aliases. */
 async function main() {
   const args = process.argv.slice(2);
   const filePath = path.resolve(

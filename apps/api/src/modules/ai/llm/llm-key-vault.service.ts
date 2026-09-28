@@ -18,16 +18,19 @@ export class LlmKeyVaultService implements OnModuleInit {
   private fingerprint: string | null = null;
   private loading: Promise<void> | null = null;
 
+  /** Connects encrypted key storage, decryption and logging for the in-memory vault. */
   constructor(
     private readonly prisma: PrismaService,
     private readonly crypto: LlmCryptoService,
     private readonly logger: LoggerService,
   ) {}
 
+  /** Loads the key pool when the NestJS module initializes. */
   async onModuleInit(): Promise<void> {
     await this.reload();
   }
 
+  /** Returns the current interleaved key ring, including entries whose client could not be created. */
   getRing(): readonly VaultKey[] {
     return this.ring;
   }
@@ -39,6 +42,7 @@ export class LlmKeyVaultService implements OnModuleInit {
     }
   }
 
+  /** Coalesces concurrent reload requests into one load and clears the pending promise when it settles. */
   private reload(): Promise<void> {
     this.loading ??= this.load().finally(() => {
       this.loading = null;
@@ -46,6 +50,7 @@ export class LlmKeyVaultService implements OnModuleInit {
     return this.loading;
   }
 
+  /** Loads the fingerprint and encrypted rows, rebuilds the key ring and logs load failures. */
   private async load(): Promise<void> {
     if (!this.crypto.isConfigured()) return;
 
@@ -96,6 +101,7 @@ export class LlmKeyVaultService implements OnModuleInit {
     }
   }
 
+  /** Creates a Groq client with SDK retries disabled, or logs and returns null if key loading fails. */
   private createClient(row: {
     key_alias: string;
     encrypted_key: string;

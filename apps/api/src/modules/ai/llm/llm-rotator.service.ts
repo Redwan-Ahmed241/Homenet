@@ -19,12 +19,14 @@ import {
  */
 @Injectable()
 export class LlmRotatorService {
+  /** Connects shared rotation state, the local key vault and operational logging. */
   constructor(
     private readonly prisma: PrismaService,
     private readonly vault: LlmKeyVaultService,
     private readonly logger: LoggerService,
   ) {}
 
+  /** Advances the shared sequence and returns an eligible key, or null if state is unavailable or no key qualifies. */
   async acquire(
     excludedAccounts: ReadonlySet<string>,
   ): Promise<KeyLease | null> {
@@ -80,6 +82,7 @@ export class LlmRotatorService {
     }
   }
 
+  /** Marks a key revoked in shared storage and logs failures to persist that status. */
   async revokeKey(lease: KeyLease, reason: string): Promise<void> {
     try {
       await this.prisma.llmApiKey.update({
@@ -99,6 +102,7 @@ export class LlmRotatorService {
     }
   }
 
+  /** Advances the rotation sequence and reads cooldowns, revocations and the key fingerprint; returns null on failure. */
   private async readSharedState(): Promise<SharedRotationState | null> {
     try {
       const [row] = await this.prisma.$queryRaw<
@@ -131,6 +135,7 @@ export class LlmRotatorService {
     }
   }
 
+  /** Logs a rotation-state error with its originating method and source metadata. */
   private logError(
     functionName: string,
     message: string,
