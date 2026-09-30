@@ -201,22 +201,22 @@ Paste your real environment variables:
 
 ```env
 # Database Connections (Neon / Supabase)
-DATABASE_URL="postgresql://user:password@ep-pooler.your-region.neon.tech/neondb?sslmode=require"
-DATABASE_URL_UNPOOLED="postgresql://user:password@ep-direct.your-region.neon.tech/neondb?sslmode=require"
+DATABASE_URL=postgresql://user:password@ep-pooler.your-region.neon.tech/neondb?sslmode=require
+DATABASE_URL_UNPOOLED=postgresql://user:password@ep-direct.your-region.neon.tech/neondb?sslmode=require
 
 PORT=3000
 NODE_ENV=production
 DISABLE_FILE_LOGS=false
 
-JWT_SECRET="your-strong-production-jwt-secret-here"
-JWT_ACCESS_EXPIRY="15m"
+JWT_SECRET=your-strong-production-jwt-secret-here
+JWT_ACCESS_EXPIRY=15m
 
 THROTTLE_TTL=60000
 THROTTLE_LIMIT=10
 
-CLOUDINARY_CLOUD_NAME="your-cloud-name"
-CLOUDINARY_API_KEY="your-api-key"
-CLOUDINARY_API_SECRET="your-api-secret"
+CLOUDINARY_CLOUD_NAME=your-cloud-name
+CLOUDINARY_API_KEY=your-api-key
+CLOUDINARY_API_SECRET=your-api-secret
 
 MAX_IMAGE_SIZE_MB=10
 MAX_VIDEO_SIZE_MB=100
