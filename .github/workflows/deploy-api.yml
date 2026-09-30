@@ -1,0 +1,127 @@
+name: Deploy API to VPS
+
+on:
+  push:
+    branches:
+      - main
+      - stable-vps
+    paths:
+      - 'apps/api/**'
+      - '.github/workflows/deploy-api.yml'
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/api
+          file: apps/api/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/homenet-api:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/homenet-api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to VPS
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH into VPS and deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -e
+            APP_DIR="/var/www/homenet-api"
+            mkdir -p "$APP_DIR"
+            cd "$APP_DIR"
+
+            echo "=== 1. Pulling latest image ==="
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/homenet-api:latest
+
+            if [ -f .env ]; then
+              echo "=== 2. Applying Prisma database migrations ==="
+              docker run --rm --env-file .env ${{ secrets.DOCKERHUB_USERNAME }}/homenet-api:latest npx prisma migrate deploy || true
+            else
+              echo "WARNING: .env file not found in $APP_DIR. Skipping migrations."
+            fi
+
+            echo "=== 3. Writing docker-compose.prod.yml ==="
+            cat << 'EOF' > docker-compose.prod.yml
+            services:
+              api:
+                image: ${{ secrets.DOCKERHUB_USERNAME }}/homenet-api:latest
+                container_name: homenet-api
+                restart: always
+                expose:
+                  - "3000"
+                env_file:
+                  - .env
+                volumes:
+                  - api_logs:/app/logs
+                healthcheck:
+                  test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3000', (res) => process.exit(res.statusCode < 400 ? 0 : 1))\" || exit 1"]
+                  interval: 30s
+                  timeout: 5s
+                  retries: 3
+                  start_period: 15s
+                networks:
+                  - homenet-network
+
+              nginx:
+                image: nginx:stable-alpine
+                container_name: homenet-nginx
+                restart: always
+                ports:
+                  - "80:80"
+                  - "443:443"
+                volumes:
+                  - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+                  - ./certbot/conf:/etc/letsencrypt:ro
+                  - ./certbot/www:/var/www/certbot:ro
+                depends_on:
+                  api:
+                    condition: service_healthy
+                networks:
+                  - homenet-network
+
+            networks:
+              homenet-network:
+                driver: bridge
+
+            volumes:
+              api_logs:
+            EOF
+
+            echo "=== 4. Starting / Restarting Containers ==="
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            echo "=== 5. Cleaning up old unused images ==="
+            docker image prune -af --filter "until=72h" || true
+
+            echo "=== Deployment finished successfully! ==="
