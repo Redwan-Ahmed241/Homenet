@@ -178,6 +178,7 @@ enum PropertyType {
 enum ListingType {
   sale
   rent
+  short_let
 }
 
 enum PropertyStatus {

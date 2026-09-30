@@ -10,7 +10,7 @@ export class LoggerService implements OnModuleInit {
   private logger: winston.Logger;
 
   constructor() {
-    const isVercel = !!process.env.VERCEL;
+    const disableFileLogs = process.env.DISABLE_FILE_LOGS === 'true';
 
     const logFormat = winston.format.printf(
       ({ timestamp, level, message, fileName, functionName, lineNumber }) => {
@@ -31,7 +31,7 @@ export class LoggerService implements OnModuleInit {
       }),
     ];
 
-    if (!isVercel) {
+    if (!disableFileLogs) {
       try {
         this.ensureLogDirectory();
         const fileFormat = winston.format.combine(

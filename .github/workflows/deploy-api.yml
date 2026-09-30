@@ -1,0 +1,98 @@
+name: Deploy API to VPS
+
+on:
+  push:
+    branches:
+      - main
+      - stable-vps
+    paths:
+      - 'apps/api/**'
+      - '.github/workflows/deploy-api.yml'
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: apps/api
+          file: apps/api/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/homenet-api:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/homenet-api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to VPS
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Copy Compose and Nginx config to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          source: "apps/api/docker-compose.prod.yml,apps/api/nginx.conf"
+          target: "/var/www/homenet-api"
+          strip_components: 2
+          overwrite: true
+
+      - name: SSH into VPS and deploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: ${{ secrets.VPS_PORT || 22 }}
+          script_stop: true
+          script: |
+            set -e
+            APP_DIR="/var/www/homenet-api"
+            cd "$APP_DIR"
+
+            export DOCKER_IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/homenet-api:latest"
+
+            echo "=== 1. Pulling latest image ==="
+            docker pull "$DOCKER_IMAGE"
+
+            if [ -f .env ]; then
+              echo "=== 2. Applying Prisma database migrations ==="
+              docker run --rm --env-file .env "$DOCKER_IMAGE" npx prisma migrate deploy || true
+            else
+              echo "WARNING: .env file not found in $APP_DIR. Skipping migrations."
+            fi
+
+            echo "=== 3. Starting / Restarting Containers ==="
+            docker compose -f docker-compose.prod.yml up -d --remove-orphans
+
+            echo "=== 4. Cleaning up old unused images ==="
+            docker image prune -af --filter "until=72h" || true
+
+            echo "=== Deployment finished successfully! ==="
