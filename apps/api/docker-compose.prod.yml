@@ -1,6 +1,6 @@
 services:
   api:
-    image: ${DOCKER_IMAGE:-redwanahmed241/homenet-api:latest}
+    image: ${DOCKER_IMAGE:-hrid0y/homenet-api:latest}
     container_name: homenet-api
     restart: always
     expose:
