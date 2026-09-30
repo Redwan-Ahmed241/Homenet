@@ -32,6 +32,19 @@ export interface LlmMessage {
   content: string;
 }
 
+const LLM_REASONING_EFFORTS = ['none', 'low', 'medium', 'high'] as const;
+
+/** How much hidden reasoning a reasoning model may do; those tokens count against maxTokens. */
+export type LlmReasoningEffort = (typeof LLM_REASONING_EFFORTS)[number];
+
+/** Reads LLM_REASONING_EFFORT; unset or unknown values return undefined so the field is not sent. */
+export function parseReasoningEffort(
+  value: string | undefined,
+): LlmReasoningEffort | undefined {
+  const effort = value?.trim().toLowerCase();
+  return LLM_REASONING_EFFORTS.find((e) => e === effort);
+}
+
 export interface ChatJsonOptions {
   label: string;
   model: string;
@@ -39,4 +52,6 @@ export interface ChatJsonOptions {
   timeoutMs: number;
   maxTokens: number;
   temperature: number;
+  /** Omitted for models without reasoning support. */
+  reasoningEffort?: LlmReasoningEffort;
 }

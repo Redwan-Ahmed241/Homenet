@@ -66,9 +66,9 @@ Error responses follow this shape:
    - [Admin: List All Properties](#610-admin-list-all-properties)
    - [Admin: Update Property](#611-admin-update-property)
    - [Admin: Hard Delete Property](#612-admin-hard-delete-property)
-7. [AI (Groq LLM)](#7-ai-groq-llm)
-   - [AI Smart Search](#71-ai-smart-search)
-   - [AI Listing Generator](#72-ai-listing-generator)
+7. [Smart Property Features (Groq LLM)](#7-smart-property-features-groq-llm)
+   - [Smart Search](#71-smart-search)
+   - [Smart Listing Generator](#72-smart-listing-generator)
    - [Testing the Key Rotation & Circuit Breaker](#73-testing-the-key-rotation--circuit-breaker)
 
 ---
@@ -2151,22 +2151,25 @@ Authorization: Bearer <access_token>
 
 ---
 
-## 7. AI (Groq LLM)
+## 7. Smart Property Features (Groq LLM)
+
+Both features live in the property module (`src/modules/property/smart-searching` and `src/modules/property/smart-listing`) and share the LLM layer in `src/infrastructure/llm`.
 
 All LLM calls run on the backend. The client never sends or receives an LLM API key. The backend holds a pool of Groq keys (encrypted in the `llm_api_keys` table) and uses **a different key for every LLM call**, rotating across Groq accounts. If an account hits its rate limit, the backend quietly retries on another account (up to 3 attempts).
 
 > **Before testing:**
-> 1. `.env` must contain `LLM_MASTER_ENCRYPTION_KEY` (64 hex chars) and the `LLM_*` variables (see `.env.example`).
-> 2. Keys must be seeded: put them in `keys.json` (git-ignored) and run `npm run seed:llm-keys`.
-> 3. **With the dummy keys currently seeded, every AI call ends in `503`.** Groq rejects dummy keys with 401, so each one used gets marked `REVOKED`. That is expected, and is a good way to test the failover path (see [7.3](#73-testing-the-key-rotation--circuit-breaker)). Real answers need real Groq keys.
+> 1. `.env` must contain `LLM_MASTER_ENCRYPTION_KEY` (64 hex chars) and the `LLM_*` variables (see `.env.example`). `LLM_SEARCH_MODEL` and `LLM_LISTING_MODEL` must be models Groq still serves. If Groq retires a model, every call fails with `502` / `error_code: 1602` and the server log shows `model_not_found`. With reasoning models such as `openai/gpt-oss-*`, set `LLM_REASONING_EFFORT=low`. Their hidden "thinking" counts against the token limit, and at higher effort they can run out before writing the JSON (`400 json_validate_failed` in the log, `502` / `1602` to the client). Leave it unset for non-reasoning models.
+> 2. The `llm_api_keys` table and `llm_rotation_seq` sequence come from the Prisma migration `20260930000001_add_llm_api_keys`. A fresh database gets them from `npx prisma migrate deploy`. A database where the old manual SQL was already applied (e.g. the current Neon DB) must mark the migration as applied **once** instead of running it: `npx prisma migrate resolve --applied 20260930000001_add_llm_api_keys`.
+> 3. Keys must be seeded: put them in `keys.json` (git-ignored) and run `npm run seed:llm-keys`.
+> 4. **With dummy keys seeded, every call ends in `503`.** Groq rejects dummy keys with 401, so each one used gets marked `REVOKED`. That is expected, and is a good way to test the failover path (see [7.3](#73-testing-the-key-rotation--circuit-breaker)). Real answers need real Groq keys.
 >
 > Both endpoints are rate limited to **20 requests per 60 seconds**.
 
 ---
 
-### 7.1 AI Smart Search
+### 7.1 Smart Search
 
-### `POST /v1/ai/search`
+### `POST /v1/properties/smart-search`
 
 Natural-language property search. **No authentication required.**
 
@@ -2180,7 +2183,7 @@ Prices are understood in BDT (`lakh` = 100,000, `crore` = 10,000,000). Area matc
 **Request:**
 
 ```
-POST http://localhost:3000/v1/ai/search
+POST http://localhost:3000/v1/properties/smart-search
 Content-Type: application/json
 ```
 
@@ -2304,9 +2307,9 @@ Content-Type: application/json
 
 ---
 
-### 7.2 AI Listing Generator
+### 7.2 Smart Listing Generator
 
-### `POST /v1/ai/generate-listing`
+### `POST /v1/properties/smart-listing`
 
 Generates marketing copy for a seller's listing: an SEO headline, English and Bengali descriptions, platform amenity tags, and a price-per-sqft analysis. **JWT required.**
 
@@ -2315,7 +2318,7 @@ The price analysis is **calculated by the backend** from real verified active li
 **Request:**
 
 ```
-POST http://localhost:3000/v1/ai/generate-listing
+POST http://localhost:3000/v1/properties/smart-listing
 Authorization: Bearer <access_token>
 Content-Type: application/json
 ```
@@ -2419,7 +2422,7 @@ These checks prove the key pool works. They run fine with **dummy keys**.
 1. **Send one search:**
 
    ```
-   POST http://localhost:3000/v1/ai/search
+   POST http://localhost:3000/v1/properties/smart-search
    Content-Type: application/json
 
    { "query": "2 bed flat for rent in Banani with lift" }
@@ -2466,7 +2469,9 @@ These checks prove the key pool works. They run fine with **dummy keys**.
 | Key returns 401/403 | Marks only that key `REVOKED`, retries on another account | `200` |
 | 3 attempts fail / no usable key | Gives up | `503` + `Retry-After: 30` |
 
-Unit tests for all of the above: `npx jest src/modules/ai` (38 tests).
+Unit tests for all of the above: `npx jest src/infrastructure/llm` (38 tests).
+
+**Switching LLM vendor:** only `src/infrastructure/llm/providers/groq-llm.provider.ts` talks to Groq. To use another company, implement `ILlmProvider` (`src/infrastructure/llm/interfaces/llm-provider.interface.ts`) in a new provider class and change the `LLM_PROVIDER` binding in `llm.module.ts`. Key storage, rotation and the circuit breaker stay the same.
 
 ---
 
@@ -2531,8 +2536,8 @@ Unit tests for all of the above: `npx jest src/modules/ai` (38 tests).
 18. **Submit for Verification** — Submit a completed draft property for review via `POST /v1/properties/:id/submit` (JWT required)
 19. **Add Media** — Attach images/videos to your property via `POST /v1/properties/:id/media` (JWT required)
 20. **Archive Property** — Archive an active/sold property via `DELETE /v1/properties/:id` (JWT required)
-21. **AI Search** — Search in plain language via `POST /v1/ai/search` (no auth needed). With dummy keys, expect `503` + `Retry-After: 30`.
-22. **AI Listing Generator** — Generate listing copy via `POST /v1/ai/generate-listing` (JWT required)
+21. **Smart Search** — Search in plain language via `POST /v1/properties/smart-search` (no auth needed). With dummy keys, expect `503` + `Retry-After: 30`.
+22. **Smart Listing Generator** — Generate listing copy via `POST /v1/properties/smart-listing` (JWT required)
 23. **Check Key Telemetry** — Inspect `llm_api_keys` in Neon to confirm rotation, revocation and counters ([7.3](#73-testing-the-key-rotation--circuit-breaker))
 
 > **For Roles & Permissions**, you'll need to insert roles/permissions directly into the database first (there's no seed data). Use raw SQL or a Prisma script to create roles and permissions before testing those endpoints.
@@ -2541,4 +2546,4 @@ Unit tests for all of the above: `npx jest src/modules/ai` (38 tests).
 >
 > **For Properties**, seed data is available. Run `npm run seed:properties` to populate 10 sample properties across Dhaka areas (Gulshan, Banani, Bashundhara, Dhanmondi, Uttara, Mirpur, Baridhara, Mohammadpur, Motijheel). Requires `seed:areas` to be run first. Read endpoints require no authentication. User endpoints require a JWT. Admin endpoints require the `manage_properties` permission.
 >
-> **For AI**, keys must be seeded. Put `[{ "alias": "llm-key-01", "account_id": "acct-01", "key": "gsk_..." }]` entries in `keys.json` (git-ignored) and run `npm run seed:llm-keys` (add `-- --prune` to delete aliases not in the file). The `llm_api_keys` table and `llm_rotation_seq` sequence are created manually from `prisma/manual-sql/001_llm_api_keys.sql`. **Never run `prisma migrate` against Neon for this table.** AI Search only returns listings that are `active` **and** verified, so verify some seeded properties first to get results.
+> **For AI**, keys must be seeded. Put `[{ "alias": "llm-key-01", "account_id": "acct-01", "key": "gsk_..." }]` entries in `keys.json` (git-ignored) and run `npm run seed:llm-keys` (add `-- --prune` to delete aliases not in the file). The `llm_api_keys` table and `llm_rotation_seq` sequence come from the Prisma migration `20260930000001_add_llm_api_keys` (see the notes at the top of [section 7](#7-smart-property-features-groq-llm) for databases that already had the old manual SQL applied). Smart Search only returns listings that are `active` **and** verified, so verify some seeded properties first to get results.

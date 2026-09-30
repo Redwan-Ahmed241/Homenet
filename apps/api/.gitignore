@@ -13,3 +13,5 @@ asset/
 # Plaintext LLM API keys for scripts/seed-llm-keys.ts
 keys.json
 *.keys.json
+
+seed-llm-keys.ts

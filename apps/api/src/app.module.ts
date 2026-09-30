@@ -21,7 +21,6 @@ import { NotificationModule } from './infrastructure/notification/notification.m
 import { VerificationModule } from './modules/verification/verification.module.js';
 import { NotificationsModule } from './modules/notification/notifications.module.js';
 import { EventsModule } from './infrastructure/events/events.module.js';
-import { AiModule } from './modules/ai/ai.module.js';
 
 @Module({
   imports: [
@@ -53,7 +52,6 @@ import { AiModule } from './modules/ai/ai.module.js';
     AreaModule,
     PropertyModule,
     VerificationModule,
-    AiModule,
     NotificationsModule,
   ],
   controllers: [AppController],

@@ -4,6 +4,7 @@ Handoff document for any AI agent or developer continuing this work. It records 
 
 - **Status:** Implemented and tested locally against Neon. **Not committed yet.** Real Groq keys not yet provided (50 dummy keys are seeded).
 - **Scope:** Backend only (`Homenet/apps/api`). Frontend (Expo + Next.js) was deliberately **not** touched.
+- **Refactor (2026-09-30):** The code moved. The LLM layer is now `src/infrastructure/llm/` behind an `ILlmProvider` interface (only `providers/groq-llm.provider.ts` touches Groq). The features are now `src/modules/property/smart-searching/` and `src/modules/property/smart-listing/`, and the routes are `POST /v1/properties/smart-search` and `POST /v1/properties/smart-listing`. The table and sequence now come from the Prisma migration `20260930000001_add_llm_api_keys` (the manual SQL is gone). Behaviour is unchanged. See `docs/arman-docs/llm-refactor-plan.md`.
 - **Team note:** The team describes itself as beginners. Explain things in plain language, with short flow diagrams or analogies, and ask before big decisions.
 
 ---
@@ -49,8 +50,8 @@ Previously the frontend called LLM APIs directly for "AI Search" and "AI Listing
 
 ```
 Client (web / mobile)                       ── never sees any LLM key
-   │  POST /v1/ai/search            (public, throttled 20/min)
-   │  POST /v1/ai/generate-listing  (JWT, throttled 20/min)
+   │  POST /v1/properties/smart-search   (public, throttled 20/min)
+   │  POST /v1/properties/smart-listing  (JWT, throttled 20/min)
    ▼
 AiController ──► AiService
                    │  1. validate + sanitize input
@@ -96,11 +97,13 @@ Copy 3 ──► Neon: nextval('llm_rotation_seq') ──► 3 ──► Key 3
 
 ### 5.1 DDL, already applied to Neon
 
-Stored in `prisma/manual-sql/001_llm_api_keys.sql` (idempotent, safe to re-run). It was applied with:
+Originally applied to Neon by hand from a manual SQL file. It is now the Prisma migration `prisma/migrations/20260930000001_add_llm_api_keys/migration.sql` (table, indexes and the hand-written `CREATE SEQUENCE "llm_rotation_seq"`). A fresh database gets it from `npx prisma migrate deploy`. A database that already has the table (Neon) must record it once without running it:
 
 ```
-npx prisma db execute --schema prisma/schema.prisma --file prisma/manual-sql/001_llm_api_keys.sql
+npx prisma migrate resolve --applied 20260930000001_add_llm_api_keys
 ```
+
+The original manual DDL, kept for reference:
 
 ```sql
 CREATE TABLE IF NOT EXISTS llm_api_keys (
@@ -207,7 +210,7 @@ Note: Groq's `x-ratelimit-*-requests` headers refer to **requests per day**, and
 
 All responses are wrapped by the global `ResponseInterceptor`: `{ success, message, data }`. Errors: `{ success:false, message, error_code, data:null }`.
 
-### 8.1 `POST /v1/ai/search` — public (`@Public()`), `@Throttle 20/min`
+### 8.1 `POST /v1/properties/smart-search` — public (`@Public()`), `@Throttle 20/min`
 
 Request (`AiSearchDto`): `{ query: string (3–300), page?: int 1–100 (default 1), limit?: int 1–20 (default 10) }`
 
@@ -249,7 +252,7 @@ Response `data`:
 
 Seed data stores values like `parking: 'covered'` (a string), and parking-space **counts are not stored**. So "2 parking spaces" can only be treated as "has parking".
 
-### 8.2 `POST /v1/ai/generate-listing` — JWT required, `@Throttle 20/min`
+### 8.2 `POST /v1/properties/smart-listing` — JWT required, `@Throttle 20/min`
 
 Request (`AiListingGenerateDto`):
 
@@ -294,26 +297,33 @@ Response `data`:
 
 **New**
 ```
-prisma/manual-sql/001_llm_api_keys.sql            manual DDL (table, indexes, sequence)
+prisma/migrations/20260930000001_add_llm_api_keys/   table, indexes, llm_rotation_seq
 scripts/seed-llm-keys.ts                          encrypt + upsert keys from keys.json
 src/common/errors/codes/ai.errors.ts              AI_ERRORS (1600–1603)
-src/modules/ai/
-  ai.module.ts                                    registers controller + 6 providers
-  ai.controller.ts                                routes, @Public, @Throttle, Swagger, interceptor
-  ai.service.ts                                   search + listing flows, SQL grounding, badge parsing
-  ai.prompts.ts                                   3 system prompts (filters, badges, listing copy)
-  ai-filters.util.ts                              amenity vocab, sanitizeUserText, filter whitelist
-  dto/ai-search.dto.ts, dto/ai-listing-generate.dto.ts
-  interceptors/ai-retry-after.interceptor.ts      adds Retry-After: 30 on 1600
-  llm/llm.types.ts                                VaultKey, KeyLease, ChatJsonOptions, statuses
-  llm/llm-crypto.util.ts                          AES-256-GCM, maskKey, scrubSecrets (no local imports!)
-  llm/llm-crypto.service.ts                       master key from ConfigService
-  llm/llm-key-vault.service.ts                    decrypted ring, fingerprint reload
-  llm/llm-rotation.util.ts                        interleaved ring, slot picking, duration parser
-  llm/llm-rotator.service.ts                      shared counter/cooldown/revoke (Neon)
-  llm/llm-metrics.service.ts                      async telemetry via @vercel/functions waitUntil
-  llm/llm-client.service.ts                       retry loop + circuit breaker
-  llm/*.spec.ts                                   38 unit tests (4 suites)
+src/infrastructure/llm/
+  llm.module.ts                                   binds LLM_PROVIDER, exports LlmClientService
+  llm.constants.ts                                LLM_PROVIDER token
+  llm.types.ts                                    VaultKey, KeyLease, ChatJsonOptions, statuses
+  interfaces/llm-provider.interface.ts            ILlmProvider: the only vendor-specific contract
+  providers/groq-llm.provider.ts                  the only file that imports groq-sdk
+  interceptors/llm-retry-after.interceptor.ts     adds Retry-After: 30 on 1600
+  utils/llm-crypto.util.ts                        AES-256-GCM, maskKey, scrubSecrets (no local imports!)
+  utils/llm-rotation.util.ts                      interleaved ring, slot picking, duration parser
+  services/llm-crypto.service.ts                  master key from ConfigService
+  services/llm-key-vault.service.ts               decrypted ring, fingerprint reload
+  services/llm-rotator.service.ts                 shared counter/cooldown/revoke (Neon)
+  services/llm-metrics.service.ts                 async telemetry via @vercel/functions waitUntil
+  services/llm-client.service.ts                  retry loop + circuit breaker
+  **/*.spec.ts                                    38 unit tests (4 suites)
+src/modules/property/smart-searching/
+  smart-search.module.ts / .controller.ts / .service.ts   search flow, SQL grounding, badge parsing
+  smart-search.prompt.ts                          filters + badges system prompts
+  smart-search-filters.util.ts                    amenity vocab, sanitizeUserText, filter whitelist
+  dto/smart-search.dto.ts
+src/modules/property/smart-listing/
+  smart-listing.module.ts / .controller.ts / .service.ts  listing copy + price-per-sqft analysis
+  smart-listing.prompt.ts                         listing copy system prompt
+  dto/smart-listing.dto.ts
 docs/swaron-docs/groq-llm-key-pool-context.md     this file
 docs/swaron-docs/frontend-integration-guide/07-ai-module.md   frontend guide for both AI endpoints
 ```
@@ -367,9 +377,9 @@ npm run seed:llm-keys -- other.keys.json     # custom file
 npm run seed:llm-keys -- --prune             # also DELETE rows whose alias is not in the file
 
 # Tests / checks
-npx jest src/modules/ai
+npx jest src/infrastructure/llm
 npx tsc --noEmit -p tsconfig.json
-npx eslint src/modules/ai scripts/seed-llm-keys.ts
+npx eslint src/infrastructure/llm "src/modules/property/smart-*" scripts/seed-llm-keys.ts
 npx nest build
 ```
 
@@ -430,7 +440,7 @@ Unit tests cover:
 
 ## 13. Known issues & pitfalls (read before changing anything)
 
-1. **Never run `prisma migrate dev` / `migrate reset` against Neon.** `llm_api_keys` is not in `prisma/migrations`, so Prisma sees drift and offers to **reset (wipe) the database**. Schema changes to this table go into a new file under `prisma/manual-sql/` and are applied manually.
+1. **Never run `prisma migrate dev` / `migrate reset` against Neon.** `llm_api_keys` is now in `prisma/migrations`, but Neon still has the `short_let` enum drift (§13.2), so Prisma would still see drift and offer to **reset (wipe) the database**. Before the first `migrate deploy` on Neon, run `npx prisma migrate resolve --applied 20260930000001_add_llm_api_keys` once, because the table already exists there. Future changes to this table go in normal Prisma migrations.
 2. **Pre-existing enum drift:** the Neon `ListingType` enum has a value `short_let` (1 listing) that is not in `schema.prisma` or the code. Prisma crashes when it reads such a row. AI search therefore restricts results to `listing_type IN ('sale','rent')`. Other existing endpoints may hit the same crash. Not fixed; the team should decide whether to add `short_let` to the schema.
 3. **Vercel env:** `LLM_MASTER_ENCRYPTION_KEY` (identical to the local one used for seeding) and the `LLM_*` variables must be added in Vercel, or AI endpoints return 503.
 4. **Per-instance on Vercel (accepted):** the filter cache and the existing `ThrottlerGuard` storage are in-memory per instance. Rotation and cooldowns are **not**; they are shared in Neon.
@@ -449,7 +459,7 @@ Unit tests cover:
 - [ ] The team verifies the table and telemetry in Neon.
 - [ ] Commit on a feature branch and open a PR (not done; waiting for the team).
 - [ ] Optional: add codes 1600–1603 to `docs/swaron-docs/error-codes.md`.
-- [ ] Later phase: move the frontend AI features to call `/v1/ai/search` and `/v1/ai/generate-listing`, and remove the client-side LLM keys and calls.
+- [ ] Later phase: move the frontend AI features to call `/v1/properties/smart-search` and `/v1/properties/smart-listing`, and remove the client-side LLM keys and calls.
 - [ ] Optional: decide on the `short_let` enum drift (§13.2).
 
 ---

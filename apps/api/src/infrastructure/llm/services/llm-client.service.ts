@@ -59,6 +59,7 @@ export class LlmClientService {
             messages: options.messages,
             temperature: options.temperature,
             maxTokens: options.maxTokens,
+            reasoningEffort: options.reasoningEffort,
           },
           Math.min(options.timeoutMs, remainingMs),
         );
@@ -81,7 +82,7 @@ export class LlmClientService {
       {
         fileName: 'llm-client.service.ts',
         functionName: 'chatJson',
-        lineNumber: 79,
+        lineNumber: 80,
       },
     );
     throw new AppException(AI_ERRORS.AI_SERVICE_UNAVAILABLE);
@@ -143,7 +144,7 @@ export class LlmClientService {
         {
           fileName: 'llm-client.service.ts',
           functionName: 'handleFailure',
-          lineNumber: 141,
+          lineNumber: 142,
         },
       );
       return 'retry';
@@ -154,7 +155,7 @@ export class LlmClientService {
       {
         fileName: 'llm-client.service.ts',
         functionName: 'handleFailure',
-        lineNumber: 152,
+        lineNumber: 153,
       },
     );
     return 'fatal';
@@ -176,7 +177,7 @@ export class LlmClientService {
     this.logger.error(`LLM ${label} returned non-JSON content`, {
       fileName: 'llm-client.service.ts',
       functionName: 'parseJson',
-      lineNumber: 176,
+      lineNumber: 177,
     });
     throw new AppException(AI_ERRORS.AI_INVALID_RESPONSE);
   }
