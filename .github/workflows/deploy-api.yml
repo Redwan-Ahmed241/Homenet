@@ -74,50 +74,50 @@ jobs:
 
             echo "=== 3. Writing docker-compose.prod.yml ==="
             cat << 'EOF' > docker-compose.prod.yml
-            services:
-              api:
-                image: ${{ secrets.DOCKERHUB_USERNAME }}/homenet-api:latest
-                container_name: homenet-api
-                restart: always
-                expose:
-                  - "3000"
-                env_file:
-                  - .env
-                volumes:
-                  - api_logs:/app/logs
-                healthcheck:
-                  test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3000', (res) => process.exit(res.statusCode < 400 ? 0 : 1))\" || exit 1"]
-                  interval: 30s
-                  timeout: 5s
-                  retries: 3
-                  start_period: 15s
-                networks:
-                  - homenet-network
+services:
+  api:
+    image: ${{ secrets.DOCKERHUB_USERNAME }}/homenet-api:latest
+    container_name: homenet-api
+    restart: always
+    expose:
+      - "3000"
+    env_file:
+      - .env
+    volumes:
+      - api_logs:/app/logs
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:3000', (res) => process.exit(res.statusCode < 400 ? 0 : 1))\" || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    networks:
+      - homenet-network
 
-              nginx:
-                image: nginx:stable-alpine
-                container_name: homenet-nginx
-                restart: always
-                ports:
-                  - "80:80"
-                  - "443:443"
-                volumes:
-                  - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
-                  - ./certbot/conf:/etc/letsencrypt:ro
-                  - ./certbot/www:/var/www/certbot:ro
-                depends_on:
-                  api:
-                    condition: service_healthy
-                networks:
-                  - homenet-network
+  nginx:
+    image: nginx:stable-alpine
+    container_name: homenet-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./certbot/conf:/etc/letsencrypt:ro
+      - ./certbot/www:/var/www/certbot:ro
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - homenet-network
 
-            networks:
-              homenet-network:
-                driver: bridge
+networks:
+  homenet-network:
+    driver: bridge
 
-            volumes:
-              api_logs:
-            EOF
+volumes:
+  api_logs:
+EOF
 
             echo "=== 4. Starting / Restarting Containers ==="
             docker compose -f docker-compose.prod.yml up -d --remove-orphans
