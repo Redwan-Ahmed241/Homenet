@@ -2,7 +2,8 @@ import { APIConnectionTimeoutError, APIError } from 'groq-sdk';
 import { LlmClientService } from './llm-client.service.js';
 import { AppException } from '../../../common/errors/app.exception.js';
 import { AI_ERRORS } from '../../../common/errors/error-codes.js';
-import type { ChatJsonOptions, KeyLease } from './llm.types.js';
+import { GroqLlmProvider } from '../providers/groq-llm.provider.js';
+import type { ChatJsonOptions, KeyLease } from '../llm.types.js';
 
 type CallResult = { json: object; headers?: Record<string, string> } | Error;
 
@@ -23,7 +24,7 @@ function lease(id: string, accountId: string, result: CallResult): KeyLease {
     alias: id,
     accountId,
     maskedKey: 'gsk_...0000',
-    client: { chat: { completions: { create } } } as never,
+    client: { chat: { completions: { create } } },
   };
 }
 
@@ -71,6 +72,7 @@ describe('LlmClientService', () => {
       rotator as never,
       metrics as never,
       logger as never,
+      new GroqLlmProvider(),
     );
   });
 

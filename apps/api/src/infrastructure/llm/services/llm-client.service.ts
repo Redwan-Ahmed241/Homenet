@@ -1,13 +1,14 @@
-import { Injectable } from '@nestjs/common';
-import { APIError } from 'groq-sdk';
+import { Inject, Injectable } from '@nestjs/common';
 import { LoggerService } from '../../../common/logger/logger.service.js';
 import { AppException } from '../../../common/errors/app.exception.js';
 import { AI_ERRORS } from '../../../common/errors/error-codes.js';
 import { LlmRotatorService } from './llm-rotator.service.js';
 import { LlmMetricsService } from './llm-metrics.service.js';
-import { parseDurationSeconds } from './llm-rotation.util.js';
-import { scrubSecrets } from './llm-crypto.util.js';
-import type { ChatJsonOptions, KeyLease } from './llm.types.js';
+import { parseDurationSeconds } from '../utils/llm-rotation.util.js';
+import { scrubSecrets } from '../utils/llm-crypto.util.js';
+import { LLM_PROVIDER } from '../llm.constants.js';
+import type { ILlmProvider } from '../interfaces/llm-provider.interface.js';
+import type { ChatJsonOptions, KeyLease } from '../llm.types.js';
 
 const MAX_ATTEMPTS = 3;
 const SOFT_LIMIT_REMAINING_REQUESTS = 2;
@@ -20,11 +21,12 @@ type FailureOutcome = 'retry' | 'fatal';
 
 @Injectable()
 export class LlmClientService {
-  /** Connects shared key rotation, request telemetry and logging for Groq calls. */
+  /** Connects shared key rotation, request telemetry and logging for LLM provider calls. */
   constructor(
     private readonly rotator: LlmRotatorService,
     private readonly metrics: LlmMetricsService,
     private readonly logger: LoggerService,
+    @Inject(LLM_PROVIDER) private readonly provider: ILlmProvider,
   ) {}
 
   /** Runs one JSON-mode chat completion, failing over across accounts. Every call takes the next key. */
@@ -45,30 +47,26 @@ export class LlmClientService {
         {
           fileName: 'llm-client.service.ts',
           functionName: 'chatJson',
-          lineNumber: 47,
+          lineNumber: 45,
         },
       );
 
       try {
-        const { data, response } = await lease.client.chat.completions
-          .create(
-            {
-              model: options.model,
-              messages: options.messages,
-              temperature: options.temperature,
-              max_completion_tokens: options.maxTokens,
-              response_format: { type: 'json_object' },
-            },
-            {
-              timeout: Math.min(options.timeoutMs, remainingMs),
-              maxRetries: 0,
-            },
-          )
-          .withResponse();
+        const { content, headers } = await this.provider.chatJson(
+          lease.client,
+          {
+            model: options.model,
+            messages: options.messages,
+            temperature: options.temperature,
+            maxTokens: options.maxTokens,
+            reasoningEffort: options.reasoningEffort,
+          },
+          Math.min(options.timeoutMs, remainingMs),
+        );
 
         this.metrics.recordSuccess(lease.id);
-        await this.applySoftLimit(lease, response.headers);
-        return this.parseJson(data.choices[0]?.message?.content, options.label);
+        await this.applySoftLimit(lease, headers);
+        return this.parseJson(content, options.label);
       } catch (error) {
         if (error instanceof AppException) throw error;
         if (
@@ -84,7 +82,7 @@ export class LlmClientService {
       {
         fileName: 'llm-client.service.ts',
         functionName: 'chatJson',
-        lineNumber: 86,
+        lineNumber: 80,
       },
     );
     throw new AppException(AI_ERRORS.AI_SERVICE_UNAVAILABLE);
@@ -121,20 +119,15 @@ export class LlmClientService {
     error: unknown,
     label: string,
   ): Promise<FailureOutcome> {
-    const status =
-      error instanceof APIError
-        ? (error.status as number | undefined)
-        : undefined;
+    const { status, retryAfter } = this.provider.getErrorInfo(error);
     const message = scrubSecrets(
       error instanceof Error ? error.message : String(error),
     );
     this.metrics.recordFailure(lease.id, `${status ?? 'network'}: ${message}`);
 
     if (status === 429) {
-      const headers = (error as APIError).headers;
       const seconds =
-        parseDurationSeconds(headers?.get('retry-after')) ??
-        DEFAULT_COOLDOWN_SECONDS;
+        parseDurationSeconds(retryAfter) ?? DEFAULT_COOLDOWN_SECONDS;
       await this.rotator.cooldownAccount(lease, seconds, 'HTTP 429');
       return 'retry';
     }
@@ -151,7 +144,7 @@ export class LlmClientService {
         {
           fileName: 'llm-client.service.ts',
           functionName: 'handleFailure',
-          lineNumber: 151,
+          lineNumber: 142,
         },
       );
       return 'retry';
@@ -162,7 +155,7 @@ export class LlmClientService {
       {
         fileName: 'llm-client.service.ts',
         functionName: 'handleFailure',
-        lineNumber: 162,
+        lineNumber: 153,
       },
     );
     return 'fatal';
@@ -184,7 +177,7 @@ export class LlmClientService {
     this.logger.error(`LLM ${label} returned non-JSON content`, {
       fileName: 'llm-client.service.ts',
       functionName: 'parseJson',
-      lineNumber: 183,
+      lineNumber: 177,
     });
     throw new AppException(AI_ERRORS.AI_INVALID_RESPONSE);
   }

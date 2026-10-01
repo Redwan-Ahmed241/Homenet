@@ -49,6 +49,8 @@ user/         — UserModule     (CRUD, avatar upload)
 role/         — RoleModule     (roles, permissions, assign/revoke)
 area/         — AreaModule     (area hierarchy, public read)
 property/     — PropertyModule (full CRUD, media, verification submission)
+  smart-searching/ — SmartSearchModule (natural-language search via LlmModule)
+  smart-listing/   — SmartListingModule (LLM listing copy + price analysis)
 verification/ — VerificationModule (process verification, emits domain events)
   events/     — PropertyVerifiedEvent, PropertyRejectedEvent
 ```
@@ -63,6 +65,8 @@ prisma/         — PrismaService, PrismaModule (global)
 background-task/  — IBackgroundTaskService (PrototypeBackgroundTaskService using setTimeout)
 notification/    — INotificationService (MockNotificationService - logs only)
 events/          — EventsModule (VerificationListener — catches domain events, sends notifications)
+llm/             — LlmModule (LlmClientService: encrypted key pool, round-robin rotation, circuit breaker)
+                   Vendor-specific code only in providers/ behind ILlmProvider (currently GroqLlmProvider)
 ```
 
 ### Common (`src/common/`)
@@ -110,6 +114,7 @@ constructor(
 | `BACKGROUND_TASK_SERVICE` | `PrototypeBackgroundTaskService` | `BackgroundTaskModule` |
 | `VERIFICATION_SERVICE` | `MockVerificationService` | `VerificationModule` |
 | `CLOUDINARY_TOKEN` | Cloudinary v2 instance | `UploadModule` |
+| `LLM_PROVIDER` | `GroqLlmProvider` | `LlmModule` |
 
 ### Global modules (inject anywhere, no import needed)
 - `PrismaModule` → `PrismaService`
@@ -245,6 +250,8 @@ Current implementation (`MockNotificationService`) just logs — no persistence,
 | GET | `/my` | JWT |
 | GET | `/:id` | Public |
 | POST | `/` | JWT |
+| POST | `/smart-search` | Public (LLM, 20/min) |
+| POST | `/smart-listing` | JWT (LLM, 20/min) |
 | PATCH | `/:id` | JWT |
 | POST | `/:id/submit` | JWT |
 | DELETE | `/:id` | JWT (soft delete) |

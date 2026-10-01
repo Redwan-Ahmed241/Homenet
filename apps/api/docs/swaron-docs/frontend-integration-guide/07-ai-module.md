@@ -1,6 +1,6 @@
 # AI Module — Frontend Integration Guide
 
-> **Base URL:** `http://localhost:3000/v1/ai`
+> **Base URL:** `http://localhost:3000/v1/properties` (routes `smart-search`, `smart-listing`)
 >
 > **Branch:** All work must be done on the **`dev`** branch.
 >
@@ -47,14 +47,14 @@ App ──(API key in bundle)──► LLM          App ──► HomeNet API �
 What this means for the web (Next.js) and mobile (Expo) apps:
 
 1. **Remove** any LLM SDK usage, direct LLM `fetch` calls and LLM keys / env vars from the frontend code and `.env` files.
-2. **Call** `POST /v1/ai/search` and `POST /v1/ai/generate-listing` instead.
+2. **Call** `POST /v1/properties/smart-search` and `POST /v1/properties/smart-listing` instead.
 3. **Handle `503`** gracefully. It means the AI is busy, not that something is broken (see [Handling errors](#3-handling-errors)).
 
 > The backend keeps 50 keys across ~10 Groq accounts and switches key on every call. If one account is rate-limited, it retries on another account automatically. The user only sees an error if **all 3 attempts** fail.
 
 ---
 
-## 1. POST /v1/ai/search
+## 1. POST /v1/properties/smart-search
 
 > **Public** — No auth required. Rate limited: 20 requests per 60 seconds.
 
@@ -223,7 +223,7 @@ Response header: **`Retry-After: 30`**
 
 ---
 
-## 2. POST /v1/ai/generate-listing
+## 2. POST /v1/properties/smart-listing
 
 > 🔒 **Requires JWT.** Rate limited: 20 requests per 60 seconds.
 
@@ -455,7 +455,7 @@ export class ApiError extends Error {
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000'; // Expo: EXPO_PUBLIC_API_URL
 
 async function postAi<T>(path: string, body: unknown, accessToken?: string): Promise<T> {
-  const res = await fetch(`${API_BASE}/v1/ai/${path}`, {
+  const res = await fetch(`${API_BASE}/v1/properties/${path}`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -472,10 +472,10 @@ async function postAi<T>(path: string, body: unknown, accessToken?: string): Pro
 }
 
 export const aiSearch = (query: string, page = 1, limit = 10) =>
-  postAi<AiSearchResult>('search', { query, page, limit });
+  postAi<AiSearchResult>('smart-search', { query, page, limit });
 
 export const aiGenerateListing = (input: AiListingRequest, accessToken: string) =>
-  postAi<AiListingResult>('generate-listing', input, accessToken);
+  postAi<AiListingResult>('smart-listing', input, accessToken);
 ```
 
 > **CORS note:** browsers only expose the `Retry-After` header to JavaScript if the API allows it. If `res.headers.get('Retry-After')` returns `null` on the web app, fall back to **30 seconds** (the value the backend always sends). React Native is not affected.
@@ -504,10 +504,10 @@ The AI uses the platform amenity tags from `PROPERTY_TYPES_SPECIFICATION.md`:
 ## 6. Frontend Integration Checklist
 
 - [ ] Remove all LLM keys, LLM SDKs and direct LLM calls from web and mobile code, `.env` files and CI secrets.
-- [ ] AI Search calls `POST /v1/ai/search` on submit (not on every keystroke).
+- [ ] AI Search calls `POST /v1/properties/smart-search` on submit (not on every keystroke).
 - [ ] Search results show `filters` as chips and render `ai_badges` only when non-empty.
 - [ ] "Load more" re-sends the same `query` with the next `page`.
-- [ ] Listing wizard calls `POST /v1/ai/generate-listing` with the JWT and pre-fills (does not auto-save) the title, EN/BN descriptions and amenities.
+- [ ] Listing wizard calls `POST /v1/properties/smart-listing` with the JWT and pre-fills (does not auto-save) the title, EN/BN descriptions and amenities.
 - [ ] Sizes are converted to **sqft** before sending `area_size`.
 - [ ] Bengali font available on web and mobile.
 - [ ] `503` / `1600` shows a friendly "AI is busy" message with a Retry button (at most one automatic retry after `Retry-After`).

@@ -1,5 +1,5 @@
 import { LlmRotatorService } from './llm-rotator.service.js';
-import type { VaultKey } from './llm.types.js';
+import type { VaultKey } from '../llm.types.js';
 
 function key(id: string, accountId: string): VaultKey {
   return {
@@ -7,7 +7,7 @@ function key(id: string, accountId: string): VaultKey {
     alias: id,
     accountId,
     maskedKey: 'gsk_...0000',
-    client: {} as VaultKey['client'],
+    client: {},
   };
 }
 

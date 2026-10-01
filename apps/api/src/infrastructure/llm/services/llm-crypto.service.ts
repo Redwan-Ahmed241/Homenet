@@ -5,7 +5,7 @@ import {
   decryptSecret,
   parseMasterKey,
   type EncryptedSecret,
-} from './llm-crypto.util.js';
+} from '../utils/llm-crypto.util.js';
 
 @Injectable()
 export class LlmCryptoService {

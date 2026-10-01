@@ -13,7 +13,7 @@ import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { ListingType, PropertyType } from '@prisma/client';
 
-export class AiListingGenerateDto {
+export class SmartListingDto {
   @ApiProperty({ example: 'gulshan-dhaka' })
   @IsString()
   @IsNotEmpty()

@@ -2,7 +2,7 @@ import { IsInt, IsOptional, IsString, Length, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
-export class AiSearchDto {
+export class SmartSearchDto {
   @ApiProperty({
     example: '3-bed apartment in Gulshan under 3.5 crore with parking',
   })

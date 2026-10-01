@@ -1,10 +1,11 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
-import Groq from 'groq-sdk';
+import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../../../config/prisma/prisma.service.js';
 import { LoggerService } from '../../../common/logger/logger.service.js';
 import { LlmCryptoService } from './llm-crypto.service.js';
-import { buildInterleavedRing } from './llm-rotation.util.js';
-import type { VaultKey } from './llm.types.js';
+import { buildInterleavedRing } from '../utils/llm-rotation.util.js';
+import { LLM_PROVIDER } from '../llm.constants.js';
+import type { ILlmProvider } from '../interfaces/llm-provider.interface.js';
+import type { LlmProviderClient, VaultKey } from '../llm.types.js';
 
 /** Changes whenever a key row is added, removed, moved to another account or re-encrypted. */
 export const KEY_SET_FINGERPRINT_SQL = `
@@ -23,6 +24,7 @@ export class LlmKeyVaultService implements OnModuleInit {
     private readonly prisma: PrismaService,
     private readonly crypto: LlmCryptoService,
     private readonly logger: LoggerService,
+    @Inject(LLM_PROVIDER) private readonly provider: ILlmProvider,
   ) {}
 
   /** Loads the key pool when the NestJS module initializes. */
@@ -86,7 +88,7 @@ export class LlmKeyVaultService implements OnModuleInit {
         {
           fileName: 'llm-key-vault.service.ts',
           functionName: 'load',
-          lineNumber: 84,
+          lineNumber: 86,
         },
       );
     } catch (error) {
@@ -95,29 +97,29 @@ export class LlmKeyVaultService implements OnModuleInit {
         {
           fileName: 'llm-key-vault.service.ts',
           functionName: 'load',
-          lineNumber: 93,
+          lineNumber: 95,
         },
       );
     }
   }
 
-  /** Creates a Groq client with SDK retries disabled, or logs and returns null if key loading fails. */
+  /** Creates a provider client with SDK retries disabled, or logs and returns null if key loading fails. */
   private createClient(row: {
     key_alias: string;
     encrypted_key: string;
     iv: string;
     auth_tag: string;
-  }): Groq | null {
+  }): LlmProviderClient | null {
     try {
       const apiKey = this.crypto.decrypt(row, row.key_alias);
-      return new Groq({ apiKey, maxRetries: 0 });
+      return this.provider.createClient(apiKey);
     } catch {
       this.logger.error(
         `Refusing to load LLM key "${row.key_alias}": decryption or integrity check failed`,
         {
           fileName: 'llm-key-vault.service.ts',
           functionName: 'createClient',
-          lineNumber: 114,
+          lineNumber: 117,
         },
       );
       return null;

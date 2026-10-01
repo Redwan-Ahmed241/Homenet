@@ -6,12 +6,12 @@ import {
   KEY_SET_FINGERPRINT_SQL,
   LlmKeyVaultService,
 } from './llm-key-vault.service.js';
-import { pickSlotIndex } from './llm-rotation.util.js';
+import { pickSlotIndex } from '../utils/llm-rotation.util.js';
 import {
   LLM_KEY_STATUS,
   type KeyLease,
   type SharedRotationState,
-} from './llm.types.js';
+} from '../llm.types.js';
 
 /**
  * Strict 1-call round-robin shared by every Vercel instance: the position comes from a Postgres

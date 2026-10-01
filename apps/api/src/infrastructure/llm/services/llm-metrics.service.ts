@@ -2,8 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { waitUntil } from '@vercel/functions';
 import { PrismaService } from '../../../config/prisma/prisma.service.js';
 import { LoggerService } from '../../../common/logger/logger.service.js';
-import { scrubSecrets } from './llm-crypto.util.js';
-import { LLM_KEY_STATUS } from './llm.types.js';
+import { scrubSecrets } from '../utils/llm-crypto.util.js';
+import { LLM_KEY_STATUS } from '../llm.types.js';
 
 const MAX_ERROR_LENGTH = 500;
 

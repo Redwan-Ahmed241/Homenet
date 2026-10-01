@@ -19,7 +19,7 @@ import {
   maskKey,
   parseMasterKey,
   type EncryptedSecret,
-} from '../src/modules/ai/llm/llm-crypto.util';
+} from '../src/infrastructure/llm/utils/llm-crypto.util';
 
 interface KeyEntry {
   alias: string;
