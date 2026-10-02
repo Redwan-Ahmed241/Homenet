@@ -299,6 +299,33 @@ model Verification {
   @@index([property_id])
 }
 
+// Table is created manually (prisma/manual-sql/001_llm_api_keys.sql), not via prisma migrate.
+model LlmApiKey {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key_alias       String    @unique @db.VarChar(50)
+  account_id      String    @db.VarChar(50)
+  masked_key      String    @db.VarChar(20)
+  encrypted_key   String
+  iv              String    @db.VarChar(32)
+  auth_tag        String    @db.VarChar(40)
+  status          String    @default("ACTIVE") @db.VarChar(20)
+
+  success_count   Int       @default(0)
+  failure_count   Int       @default(0)
+  last_success_at DateTime? @db.Timestamptz(6)
+  last_failed_at  DateTime? @db.Timestamptz(6)
+  last_error      String?
+  cooldown_until  DateTime? @db.Timestamptz(6)
+
+  created_at      DateTime  @default(now()) @db.Timestamptz(6)
+  updated_at      DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+
+  @@index([status], map: "idx_llm_keys_status")
+  @@index([cooldown_until], map: "idx_llm_keys_cooldown")
+  @@index([account_id], map: "idx_llm_keys_account")
+  @@map("llm_api_keys")
+}
+
 // ─── Notifications (FR-13) ────────────────────────────────────────────────────
 // One row per recipient. Admin notifications are fanned out to every user who
 // can moderate listings at the moment of the event, so each admin keeps their
@@ -330,3 +357,4 @@ model Notification {
   @@index([user_id, audience, created_at])
   @@map("notifications")
 }
+
